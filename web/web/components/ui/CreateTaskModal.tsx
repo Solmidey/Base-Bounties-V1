@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { base } from 'wagmi/chains';
 import { X } from 'lucide-react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { Address, parseEther } from 'viem';
-import { CONTRACT_ADDRESS, TASK_ESCROW_ABI } from '@/lib/utils';
+import type { Address, Abi } from 'viem';
+import { parseEther } from 'viem';
+import { CONTRACT_ADDRESS, TASK_ESCROW_ABI } from '../../lib/utils';
 
 export default function CreateTaskModal({
   open,
@@ -39,7 +39,10 @@ export default function CreateTaskModal({
       <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#0b1217] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Create a new bounty</h3>
-          <button onClick={onClose} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -85,7 +88,10 @@ export default function CreateTaskModal({
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-2">
-          <button onClick={onClose} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/10">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
+          >
             Cancel
           </button>
 
@@ -94,14 +100,13 @@ export default function CreateTaskModal({
             onClick={() =>
               writeContract({
                 address: CONTRACT_ADDRESS as Address,
-                abi: TASK_ESCROW_ABI as Abi,
+                abi: TASK_ESCROW_ABI as Abi, // or export ABI as `as const` and drop the cast
                 functionName: 'createTask',
                 args: [deadlineTs],
                 value: parseEther(amount || '0'),
                 account: address as Address,
                 chain: base,
-                chain: base,
-              } as const)
+              })
             }
             className="rounded-xl bg-gradient-to-r from-[#00FFD1] to-[#0085FF] px-4 py-2 text-sm font-semibold text-[#061017] disabled:opacity-60"
           >

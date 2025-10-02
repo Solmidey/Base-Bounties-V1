@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Flame, Twitter, Trophy, PlusCircle, Filter, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+
 import CreateTaskModal from '@/components/ui/CreateTaskModal';
 import TaskGrid from '@/components/ui/TaskGrid';
 import Navbar from '@/components/ui/Navbar';
@@ -30,7 +31,11 @@ export default function Home() {
                 transition={{ duration: 0.6 }}
                 className="text-4xl font-semibold leading-tight md:text-6xl"
               >
-                Ship bounties at the speed of <span className="bg-gradient-to-r from-[#00FFD1] to-[#0085FF] bg-clip-text text-transparent">Base</span>.
+                Ship bounties at the speed of{' '}
+                <span className="bg-gradient-to-r from-[#00FFD1] to-[#0085FF] bg-clip-text text-transparent">
+                  Base
+                </span>
+                .
               </motion.h1>
 
               <motion.p
@@ -39,7 +44,8 @@ export default function Home() {
                 transition={{ duration: 0.7, delay: 0.05 }}
                 className="mt-5 max-w-lg text-white/70"
               >
-                Create tasks, sign approvals with EIP-712, and pay out on-chain. A refined marketplace UX that makes crypto work feel effortless.
+                Create tasks, sign approvals with EIP-712, and pay out on-chain. A refined marketplace UX that makes
+                crypto work feel effortless.
               </motion.p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -83,68 +89,87 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="relative"
+              transition={{ duration: 0.5 }}
+              className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.03] p-6 shadow-2xl backdrop-blur"
             >
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="rounded-full bg-[#00FFD1]/10 px-3 py-1 text-xs font-medium text-[#00FFD1]">Base mainnet</span>
-                  <span className="text-xs text-white/60">Escrowed • EIP-712 approvals</span>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Most recent bounty</h3>
+                  <p className="mt-1 text-sm text-white/60">
+                    Design a Base-themed landing page animation with 3D spark effects.
+                  </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                  <div className="mb-2 text-sm text-white/70">Bounty preview</div>
-                  <div className="rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">Design “Base-blue” thumbnail</div>
-                        <div className="text-xs text-white/60">Deadline: 48h • 0.02 ETH</div>
-                      </div>
-                      <button
-                        onClick={() => setOpen(true)}
-                        className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#061017]"
-                      >
-                        Fund
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs text-emerald-300">Open</span>
               </div>
+
+              <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+                <MiniStat label="Reward" value="0.25 ETH" />
+                <MiniStat label="Deadline" value="3d 8h" />
+                <MiniStat label="Applicants" value="12" />
+              </div>
+
+              <button
+                onClick={() => setOpen(true)}
+                className="mt-6 w-full rounded-xl bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur transition hover:bg-white/15"
+              >
+                Submit proposal
+              </button>
+
+              <div className="pointer-events-none absolute -inset-1 -z-10 rounded-3xl bg-[radial-gradient(400px_200px_at_100%_0%,rgba(0,255,209,0.15),transparent),radial-gradient(500px_300px_at_0%_100%,rgba(0,133,255,0.12),transparent)]" />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* FILTERS + GRID */}
-      <section id="browse" className="relative mx-auto max-w-7xl px-6 pb-24">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-2xl font-semibold">Live bounties</h2>
-          <div className="flex gap-2">
-            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">All</button>
-            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Design</button>
-            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Frontend</button>
-            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Content</button>
-            <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">Research</button>
+      {/* BROWSE */}
+      <section id="browse" className="relative border-t border-white/10">
+        <div className="mx-auto max-w-7xl px-6 py-14">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Explore new bounties</h2>
+            <Link href="#" className="text-sm text-white/70 hover:text-white">
+              View all →
+            </Link>
           </div>
-        </div>
 
-        <TaskGrid onNewTask={() => setOpen(true)} />
+          <TaskGrid onNewTask={() => setOpen(true)} />
+        </div>
       </section>
 
       <Footer />
 
-      <CreateTaskModal open={open} onClose={() => setOpen(false)} />
+      {/* Modal with onCreated now passed */}
+      <CreateTaskModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onCreated={() => {
+          // Close the modal and (optionally) refresh data
+          setOpen(false);
+          // If you fetch tasks server-side, you could call router.refresh() here
+        }}
+      />
     </div>
   );
 }
 
 function Stat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-center gap-2 text-white/70">
-        {icon}
-        <span className="text-xs">{label}</span>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mx-auto flex w-full max-w-[9rem] flex-col items-center gap-1">
+        <div className="flex items-center gap-2 text-white/70">
+          <span className="h-5 w-5">{icon}</span>
+          <span className="text-xs">{label}</span>
+        </div>
+        <div className="text-2xl font-semibold">{value}</div>
       </div>
-      <div className="mt-1 text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+      <div className="text-xs text-white/60">{label}</div>
+      <div className="text-lg font-medium">{value}</div>
     </div>
   );
 }

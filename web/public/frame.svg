@@ -1,0 +1,22 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="#05010a" />
+  <rect x="40" y="40" width="1120" height="550" rx="28" fill="#0b1120" stroke="#1f2937" stroke-width="3" />
+  <text x="80" y="140" fill="#f8fafc" font-size="72" font-weight="600" font-family="'Inter', sans-serif">Base Task Board</text>
+  <text x="80" y="220" fill="#94a3b8" font-size="28" font-family="'Inter', sans-serif">Escrow → Sign → Claim. Bounties that settle in one tap.</text>
+  <g transform="translate(80,260)">
+    <text fill="#38bdf8" font-size="24" font-family="'Inter', sans-serif">1. Creator escrows onchain</text>
+    <text y="50" fill="#38bdf8" font-size="24" font-family="'Inter', sans-serif">2. Hunter ships work</text>
+    <text y="100" fill="#38bdf8" font-size="24" font-family="'Inter', sans-serif">3. Creator signs payout</text>
+    <text y="150" fill="#38bdf8" font-size="24" font-family="'Inter', sans-serif">4. Hunter claims</text>
+  </g>
+  <rect x="800" y="340" width="300" height="220" rx="24" fill="url(#grad)" opacity="0.9" />
+  <text x="830" y="400" fill="#0f172a" font-size="24" font-family="'Inter', sans-serif">On Base mainnet</text>
+  <text x="830" y="450" fill="#0f172a" font-size="48" font-weight="600" font-family="'Inter', sans-serif">Trustless</text>
+  <text x="830" y="510" fill="#0f172a" font-size="20" font-family="'Inter', sans-serif">Signature-guarded payouts</text>
+</svg>

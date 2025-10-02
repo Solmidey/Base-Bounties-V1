@@ -1,6 +1,6 @@
 import "./globals.css";
 import { ReactNode } from "react";
-import { Providers } from "../components/providers";
+import Providers from "../components/providers";
 import { cn } from "../lib/utils";
 
 export const metadata = {

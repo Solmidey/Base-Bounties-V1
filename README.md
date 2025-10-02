@@ -1,30 +1,61 @@
+# Base-Bounties-V1
+Freelance app onchain
 # Base Bounties MVP
 
-Lean, no-admin bounty board for Base with an onchain escrow contract, a Next.js dashboard, and a Farcaster Frame for
-discovery.
+A lean, no-admin bounty board for Base that combines an onchain escrow contract, a Next.js dashboard, and a Farcaster
+Frame for discovery. The repository contains everything required to deploy the escrow primitive, run the web
+experience, and publish a shareable bounty card.
 
-## Architecture
+## Repository layout
 
-### Onchain (TaskBoardEscrow.sol)
-- `createTask(deadline)` escrows ETH per task. The contract tracks creator, amount, deadline, status and optional work hash.
-- `claim(taskId, hunter, workHash, signature)` verifies an EIP-712 typed message signed by the creator and transfers the
-  escrowed ETH to the hunter.
-- `refund(taskId)` lets creators recover funds if the task expired without a claim.
-- ERC-712 domain helper utilities live in `contracts/utils` (no external deps).
+- `contracts/` – Solidity sources for the escrow primitive and supporting EIP-712 utilities.
+- `web/` – Next.js app that lets creators post and fund tasks while guiding hunters through submitting claims.
 
-### Offchain (Next.js app in `/web`)
-- Dashboard explains the flow, lets creators fund a task, and provides a claim/explorer tool for hunters.
-- Wallet connectivity via RainbowKit + Wagmi.
-- Typed data helper for generating claim signatures + submitting claims.
-- Styling with Tailwind; no backend dependencies.
-- Store task descriptions however you want (e.g. JSON pinned to IPFS). Convert IPFS CID to a bytes32 hash when calling
-  `claim` so the onchain record references the delivered work.
+## Onchain escrow (TaskBoardEscrow.sol)
 
-### Farcaster Frame
-- `/api/frame` returns a frame payload with a CTA to open the task board.
-- Optional text input lets users deep link to `/tasks/:id` pages that nudge hunters directly into the claim flow.
+The `TaskBoardEscrow` contract holds ETH for each task and only releases funds after the creator authorizes a claim.
+
+Key behaviours:
+
+- `createTask(uint40 deadline)` – Creator escrows ETH for a task. The contract stores the creator, amount, deadline,
+  optional work hash, and status. Deadlines must be in the future and deposits larger than `type(uint96).max` wei are
+  rejected to preserve tight storage packing.
+- `claim(uint256 taskId, address hunter, bytes32 workHash, bytes signature)` – Verifies an EIP-712 typed message signed
+  by the creator and sends the escrowed ETH to the hunter. Empty work hashes and zero-address hunters are rejected.
+- `refund(uint256 taskId)` – Lets the creator recover escrow if the task expires without an accepted claim.
+- Local `EIP712` and `ECDSA` helpers keep the bytecode minimal and avoid external dependencies.
+
+## Web dashboard (web/)
+
+The Next.js app serves both creators and bounty hunters:
+
+- Wallet onboarding via RainbowKit and Wagmi, configured for Base.
+- Task creation UI that requires a configured contract address and deadline, then calls `createTask` with the supplied
+  escrow value.
+- Claim helper that derives the typed data, previews it for review, and produces the signature hunters submit onchain.
+- IPFS CID → `bytes32` work-hash helper so creators can easily reference offchain deliverables when approving claims.
+- Tailwind styling with no backend dependencies; all interactions are client-side.
+
+## Farcaster Frame
+
+The `/api/frame` route returns a frame payload that showcases a bounty and deep links users back into the dashboard.
+Users can optionally provide a task ID to jump hunters directly into the claim workflow.
 
 ## Getting started
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+- A deployed instance of `TaskBoardEscrow`
+- A WalletConnect Project ID for RainbowKit
+
+### Deploy the escrow contract
+
+Deploy `contracts/TaskBoardEscrow.sol` using your preferred toolchain (Foundry, Hardhat, etc.). Record the deployed
+address for use in the web app.
+
+### Configure and run the web app
 
 ```bash
 cd web
@@ -32,21 +63,26 @@ npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_SITE_URL` before deploying (used in the Frame payloads).
-Set `NEXT_PUBLIC_WALLETCONNECT_ID` with your WalletConnect Project ID (RainbowKit requirement).
+Create a `.env.local` file inside `web/` with the following entries:
 
-Deploy `contracts/TaskBoardEscrow.sol` (example: Foundry or Hardhat). Update `CONTRACT_ADDRESS` in `web/lib/utils.ts`.
-
-```ts
-// Example helper to derive a bytes32 work hash from an IPFS CID using viem
-import { keccak256, stringToBytes } from "viem";
-
-const workHash = keccak256(stringToBytes("ipfs://bafy..."));
+```env
+NEXT_PUBLIC_SITE_URL= # Used when generating Frame payloads
+NEXT_PUBLIC_WALLETCONNECT_ID= # WalletConnect Project ID required by RainbowKit
+NEXT_PUBLIC_CONTRACT_ADDRESS= # Address of the deployed TaskBoardEscrow contract
 ```
 
+Start the development server (`npm run dev`) to interact with the dashboard locally.
+
 ## Claim flow recap
-1. Creator funds escrow (`createTask`) and posts the task metadata (IPFS hash or description) in the Frame.
-2. Hunter ships work and shares an IPFS hash or link.
-3. Creator signs a `Claim` typed data payload; the UI generates the signature.
-4. Hunter submits `claim` with the signature and work hash. Funds release trustlessly.
-5. If no claim occurs by deadline, creator can `refund` to recover escrow.
+
+1. Creator funds escrow with `createTask` and shares task details (e.g. IPFS metadata) through the dashboard or Frame.
+2. Hunter completes the work and submits a deliverable hash (IPFS CID → `bytes32`).
+3. Creator signs the typed `Claim` payload generated in the dashboard; hunters can verify the fields before submission.
+4. Hunter calls `claim` on the contract with the signature and work hash to release escrowed funds.
+5. If no claim is accepted before the deadline, the creator can call `refund` to recover escrow.
+
+## Notes
+
+- Task metadata storage is left to creators (IPFS, hosted JSON, etc.). Only the work hash is recorded onchain.
+- For optimistic, signature-free flows, the contract can be extended with a challenge window and dispute bond in a
+  follow-up iteration.

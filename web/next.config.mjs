@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: true
-  }
+  // Server Actions are on by default in Next 14 — no experimental flag needed.
+  reactStrictMode: true,
 };
 
 export default nextConfig;

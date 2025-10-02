@@ -82,7 +82,7 @@ export default function CreateTaskModal({
             </label>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/70">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/70">
             Deadline UNIX: <span className="font-mono">{deadlineTs.toString()}</span>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function CreateTaskModal({
             onClick={() =>
               writeContract({
                 address: CONTRACT_ADDRESS as Address,
-                abi: TASK_ESCROW_ABI as Abi, // if you export the ABI as `as const`, you can omit this cast
+                abi: TASK_ESCROW_ABI as Abi,
                 functionName: 'createTask',
                 args: [deadlineTs],
                 value: parseEther(amount || '0'),
@@ -117,4 +117,3 @@ export default function CreateTaskModal({
     </div>
   );
 }
-

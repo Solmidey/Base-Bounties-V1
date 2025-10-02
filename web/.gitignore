@@ -1,0 +1,16 @@
+# Node / Next.js
+node_modules
+.next
+out
+.vercel
+
+# Env & logs
+.env*
+*.log
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+web/tsconfig.tsbuildinfo
+
+# Mac / OS cruft
+.DS_Store

@@ -1,47 +1,39 @@
-"use client";
+'use client';
 
-import "@rainbow-me/rainbowkit/styles.css";
+import React from 'react';
+import { WagmiProvider } from 'wagmi';
+import { base, baseSepolia } from 'wagmi/chains';
+import { http } from 'viem';
+import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { ReactNode, useState } from "react";
-import { RainbowKitProvider, getDefaultWallets, midnightTheme } from "@rainbow-me/rainbowkit";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiConfig, configureChains, createConfig } from "wagmi";
-import { base, baseSepolia } from "wagmi/chains";
-import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
+// --- ENV ---
+const WC_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_ID!;
+const RPC_MAINNET = process.env.NEXT_PUBLIC_RPC_URL;        // optional but recommended
+const RPC_SEPOLIA = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL; // optional if you support testnet
 
-const { chains, publicClient } = configureChains(
-  [base, baseSepolia],
-  [
-    jsonRpcProvider({
-      rpc: (chain) => ({ http: chain.rpcUrls.default.http[0] })
-    })
-  ]
-);
-
-const walletConnectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID ?? "demo";
-
-const { connectors } = getDefaultWallets({
-  appName: "Base Task Board",
-  projectId: walletConnectId,
-  chains
+// --- Wagmi/RainbowKit config (v2 style) ---
+const config = getDefaultConfig({
+  appName: 'Base Bounties',
+  projectId: WC_ID,
+  chains: [base, baseSepolia], // include only base if you don’t want testnet
+  transports: {
+    [base.id]: http(RPC_MAINNET),          // if undefined, RainbowKit will use default/public RPC
+    [baseSepolia.id]: http(RPC_SEPOLIA),   // remove this line if you don’t support testnet
+  },
+  // optional: ssr: true,
 });
 
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient
-});
+const queryClient = new QueryClient();
 
-export function Providers({ children }: { children: ReactNode }) {
-  const [client] = useState(() => new QueryClient());
-
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <QueryClientProvider client={client}>
-        <RainbowKitProvider chains={chains} theme={midnightTheme()}>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={darkTheme()}>
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>
-    </WagmiConfig>
+    </WagmiProvider>
   );
 }

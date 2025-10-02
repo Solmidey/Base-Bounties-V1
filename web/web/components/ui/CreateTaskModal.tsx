@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { base } from 'wagmi/chains';
 import { X } from 'lucide-react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { base } from 'wagmi/chains';
@@ -93,12 +94,13 @@ export default function CreateTaskModal({
             onClick={() =>
               writeContract({
                 address: CONTRACT_ADDRESS as Address,
-                abi: TASK_ESCROW_ABI as const,
+                abi: TASK_ESCROW_ABI as Abi,
                 functionName: 'createTask',
                 args: [deadlineTs],
                 value: parseEther(amount || '0'),
                 account: address as Address,
-                chainId: base.id,
+                chain: base,
+                chain: base,
               } as const)
             }
             className="rounded-xl bg-gradient-to-r from-[#00FFD1] to-[#0085FF] px-4 py-2 text-sm font-semibold text-[#061017] disabled:opacity-60"

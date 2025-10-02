@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Flame, Twitter, Trophy, PlusCircle, Filter, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import CreateTaskModal from '../components/ui/CreateTaskModal';
-import TaskGrid from '../components/ui/TaskGrid';
-import Navbar from '../components/ui/Navbar';
-import Footer from '../components/ui/Footer';
+import CreateTaskModal from '@/components/ui/CreateTaskModal';
+import TaskGrid from '@/components/ui/TaskGrid';
+import Navbar from '@/components/ui/Navbar';
+import Footer from '@/components/ui/Footer';
 
 export default function Home() {
   const [open, setOpen] = useState(false);

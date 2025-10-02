@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {EIP712} from "./utils/EIP712.sol";
-import {ECDSA} from "./utils/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /// @title TaskBoardEscrow
 /// @notice Escrow contract that holds bounty funds and releases them when

@@ -21,9 +21,9 @@ function formatError(error: unknown) {
   if (typeof error === 'string') return error;
   if (error instanceof Error) return error.message;
   if (typeof error === 'object' && error !== null) {
-    const maybeMessage = (error as { shortMessage?: string; message?: string }).shortMessage ?? (
-      error as { message?: string }
-    ).message;
+    const maybeMessage =
+      (error as { shortMessage?: string; message?: string }).shortMessage ??
+      (error as { message?: string }).message;
     if (typeof maybeMessage === 'string') return maybeMessage;
   }
   return 'Something went wrong. Please try again.';
@@ -44,6 +44,7 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
   const [amount, setAmount] = useState('0.05');
   const [deadline, setDeadline] = useState(() => defaultDeadlineValue());
   const [localError, setLocalError] = useState<string | null>(null);
+
   const { data: txHash, isPending, writeContractAsync, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
@@ -153,6 +154,7 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
         functionName: 'createTask',
         args: [BigInt(timestamp)],
         value: parsedAmount,
+        // wagmi v2 accepts these; casting keeps TS quiet across minor versions.
         chainId: (chain?.id ?? base.id) as typeof base.id,
         account: address,
       } as any);
@@ -173,7 +175,8 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
             </span>
             <h2 className="text-2xl font-semibold text-white">Create a mission</h2>
             <p className="text-sm text-white/70">
-              Escrow ETH directly into the TaskBoardEscrow contract. Share metadata links (IPFS, briefs) in the optional notes field so hunters understand the deliverable.
+              Escrow ETH directly into the TaskBoardEscrow contract. Share metadata links (IPFS, briefs) in the optional
+              notes field so hunters understand the deliverable.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -195,7 +198,9 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
         <form className="relative grid gap-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Escrow amount (ETH)</span>
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.28em] text-white/55">
+                Escrow amount (ETH)
+              </span>
               <input
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00ffd1]/60 focus:ring-2 focus:ring-[#00ffd1]/20"
                 placeholder="0.05"
@@ -208,7 +213,9 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Deadline</span>
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.28em] text-white/55">
+                Deadline
+              </span>
               <input
                 type="datetime-local"
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-[#00ffd1]/60 focus:ring-2 focus:ring-[#00ffd1]/20"
@@ -279,3 +286,4 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
     </div>
   );
 }
+

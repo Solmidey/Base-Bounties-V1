@@ -431,7 +431,7 @@ export default function Home() {
     return () => {
       ignore = true;
     };
-  }, [publicClient, nextTaskId, refreshNonce, CONTRACT_CONFIGURED]);
+  }, [publicClient, nextTaskId, refreshNonce]);
 
   useEffect(() => {
     if (!CONTRACT_CONFIGURED || refreshNonce === 0) return;
@@ -468,7 +468,7 @@ export default function Home() {
             { label: 'Total tasks', value: '—' },
             { label: 'Escrowed ETH', value: '0 ETH' },
           ],
-    [totalTasks, openTaskCount, totalEscrowDisplay, CONTRACT_CONFIGURED]
+    [totalTasks, openTaskCount, totalEscrowDisplay]
   );
 
   const latestTask = tasks.length > 0 ? tasks[0] : null;
@@ -559,6 +559,7 @@ export default function Home() {
                 ))}
               </motion.div>
             </div>
+
             <HeroShowcase
               onLaunch={() => setOpen(true)}
               task={latestTask}
@@ -622,6 +623,7 @@ export default function Home() {
                 <Sparkles className="h-4 w-4 text-[#74f8ff]" />
               </button>
             </div>
+
             <TaskGrid
               tasks={tasks}
               loading={loadingTasks}
@@ -703,3 +705,4 @@ export default function Home() {
     </div>
   );
 }
+

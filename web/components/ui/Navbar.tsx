@@ -6,21 +6,22 @@ import { Flame, Sparkles } from 'lucide-react';
 import WalletButton from '@/components/ui/WalletButton';
 import { CONTRACT_ADDRESS, CONTRACT_CONFIGURED } from '@/lib/utils';
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  disabled?: boolean;
+  external?: boolean;
+};
+
+const baseNavItems: NavItem[] = [
   { href: '#browse', label: 'Missions' },
   { href: '#', label: 'Docs', disabled: true },
+];
+
+const navItems: NavItem[] = [
+  ...baseNavItems,
   ...(CONTRACT_CONFIGURED
-    ? ([
-        {
-          href: `https://basescan.org/address/${CONTRACT_ADDRESS}`,
-          label: 'Contract',
-          external: true,
-        } as const,
-      ] satisfies ReadonlyArray<{
-        href: string;
-        label: string;
-        external?: boolean;
-      }>)
+    ? [{ href: `https://basescan.org/address/${CONTRACT_ADDRESS}`, label: 'Contract', external: true }]
     : []),
 ];
 
@@ -30,6 +31,7 @@ export default function Navbar({ onNewTask }: { onNewTask: () => void }) {
       <div className="mx-auto max-w-6xl px-6 pt-6">
         <div className="relative flex items-center justify-between rounded-[28px] border border-white/10 bg-[#040a18]/75 px-4 py-3 backdrop-blur-2xl">
           <div className="pointer-events-none absolute inset-0 rounded-[28px] border border-white/10 opacity-40 [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.85),transparent)]" />
+
           <Link href="/" className="relative flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#00ffd1] to-[#0066ff] text-[#041215] shadow-[0_14px_35px_rgba(0,102,255,0.45)]">
               <Flame className="h-5 w-5" />
@@ -88,6 +90,7 @@ export default function Navbar({ onNewTask }: { onNewTask: () => void }) {
               </span>
               <span className="absolute inset-0 translate-x-[-40%] bg-white/20 blur-md transition group-hover:translate-x-0" />
             </button>
+
             <WalletButton className="bg-[#030915]/80" />
           </div>
         </div>
@@ -95,3 +98,4 @@ export default function Navbar({ onNewTask }: { onNewTask: () => void }) {
     </header>
   );
 }
+

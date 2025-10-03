@@ -89,10 +89,7 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
       {loading && visibleTasks.length === 0 && (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-56 animate-pulse rounded-3xl border border-white/10 bg-white/[0.04]"
-            />
+            <div key={index} className="h-56 animate-pulse rounded-3xl border border-white/10 bg-white/[0.04]" />
           ))}
         </div>
       )}
@@ -201,3 +198,4 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
     </div>
   );
 }
+

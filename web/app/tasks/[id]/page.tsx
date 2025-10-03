@@ -1,5 +1,4 @@
 'use client';
-
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, CircleDot, Clock, Coins, Loader2, RefreshCcw } from 'lucide-react';
@@ -141,3 +140,4 @@ export default function TaskDeepLink({ params }: { params: { id: string } }) {
     </div>
   );
 }
+

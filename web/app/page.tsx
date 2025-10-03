@@ -22,15 +22,21 @@ import {
   useTransform,
   type MotionValue,
 } from 'framer-motion';
-import { formatDistanceToNowStrict } from 'date-fns';
-import { formatEther } from 'viem';
 import { usePublicClient, useReadContract } from 'wagmi';
 
 import CreateTaskModal from '@/components/ui/CreateTaskModal';
 import Footer from '@/components/ui/Footer';
 import Navbar from '@/components/ui/Navbar';
-import TaskGrid, { type TaskSummary } from '@/components/ui/TaskGrid';
+import TaskGrid from '@/components/ui/TaskGrid';
 import { CONTRACT_ADDRESS, CONTRACT_CONFIGURED, TASK_ESCROW_ABI } from '@/lib/utils';
+import {
+  formatEscrowValue,
+  formatRelativeDeadline,
+  formatReward,
+  resolveTaskStatus,
+  shortenAddress,
+  type TaskSummary,
+} from '@/lib/task-utils';
 
 const badges = [
   'On-chain escrow',
@@ -94,49 +100,6 @@ const glowPoints: GlowPoint[] = [
   { x: 48, y: 72, size: 420, blur: 200, color: 'rgba(0,119,255,0.18)' },
 ];
 
-function shortenAddress(address: `0x${string}`) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
-function formatReward(amount: bigint) {
-  const parsed = Number(formatEther(amount));
-  if (!Number.isFinite(parsed) || parsed === 0) return '0 ETH';
-  if (parsed >= 1) {
-    return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} ETH`;
-  }
-  return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`;
-}
-
-function formatEscrowValue(amount: bigint) {
-  const parsed = Number(formatEther(amount));
-  if (!Number.isFinite(parsed) || parsed === 0) return '0';
-  if (parsed >= 1) {
-    return parsed.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  }
-  return parsed.toLocaleString(undefined, { maximumFractionDigits: 4 });
-}
-
-function describeDeadline(deadline: bigint) {
-  const deadlineMs = Number(deadline) * 1000;
-  if (!Number.isFinite(deadlineMs) || deadlineMs <= 0) return '—';
-  try {
-    return formatDistanceToNowStrict(new Date(deadlineMs), { addSuffix: true });
-  } catch {
-    return '—';
-  }
-}
-
-function resolveStatus(task: TaskSummary | null) {
-  if (!task) return null;
-  if (task.claimed) return { label: 'Claimed', tone: 'emerald' } as const;
-  if (task.refunded) return { label: 'Refunded', tone: 'zinc' } as const;
-  const deadlineMs = Number(task.deadline) * 1000;
-  if (Number.isFinite(deadlineMs) && deadlineMs < Date.now()) {
-    return { label: 'Expired', tone: 'amber' } as const;
-  }
-  return { label: 'Open', tone: 'sky' } as const;
-}
-
 function useTilt(maxTilt = 14) {
   const ref = useRef<HTMLDivElement>(null);
   const rotateX = useMotionValue(0);
@@ -194,8 +157,8 @@ function HeroShowcase({
   contractAddress: `0x${string}`;
 }) {
   const { ref, rotateX, rotateY, handlePointerMove, reset } = useTilt(16);
-  const status = resolveStatus(task);
-  const deadlineLabel = task ? describeDeadline(task.deadline) : null;
+  const status = task ? resolveTaskStatus(task) : null;
+  const deadlineLabel = task ? formatRelativeDeadline(task.deadline) : null;
   const rewardLabel = task ? formatReward(task.amount) : '—';
   const creatorLabel = task ? shortenAddress(task.creator) : null;
   const contractUrl = `https://basescan.org/address/${contractAddress}`;

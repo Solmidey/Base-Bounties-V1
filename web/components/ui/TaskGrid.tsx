@@ -4,20 +4,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Coins, Clock, Copy, ExternalLink, Loader2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { formatDistanceToNowStrict } from 'date-fns';
-import { formatEther } from 'viem';
 
 import { cn } from '@/lib/utils';
-
-export type TaskSummary = {
-  id: number;
-  creator: `0x${string}`;
-  amount: bigint;
-  deadline: bigint;
-  claimed: boolean;
-  refunded: boolean;
-  workHash: `0x${string}`;
-};
+import {
+  formatRelativeDeadline,
+  formatReward,
+  formatWorkHash,
+  resolveTaskStatus,
+  shortenAddress,
+  type TaskSummary,
+} from '@/lib/task-utils';
 
 type Props = {
   tasks: TaskSummary[];
@@ -26,28 +22,6 @@ type Props = {
   onNewTask: () => void;
   onRefresh: () => void;
 };
-
-const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
-
-function formatAmount(amount: bigint) {
-  const parsed = Number(formatEther(amount));
-  if (!Number.isFinite(parsed)) return '0 ETH';
-  if (parsed === 0) return '0 ETH';
-  if (parsed >= 1) {
-    return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} ETH`;
-  }
-  return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`;
-}
-
-function getStatus(task: TaskSummary, now: number) {
-  if (task.claimed) return { label: 'Claimed', tone: 'emerald' } as const;
-  if (task.refunded) return { label: 'Refunded', tone: 'zinc' } as const;
-  const deadlineMs = Number(task.deadline) * 1000;
-  if (Number.isFinite(deadlineMs) && deadlineMs < now) {
-    return { label: 'Expired', tone: 'amber' } as const;
-  }
-  return { label: 'Open', tone: 'sky' } as const;
-}
 
 export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }: Props) {
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -132,12 +106,8 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
       {visibleTasks.length > 0 && (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {visibleTasks.map((task, index) => {
-            const status = getStatus(task, now);
-            const deadlineMs = Number(task.deadline) * 1000;
-            const deadlineLabel = Number.isFinite(deadlineMs)
-              ? formatDistanceToNowStrict(new Date(deadlineMs), { addSuffix: true })
-              : '—';
-            const hasWorkHash = task.workHash && task.workHash !== ZERO_HASH;
+            const status = resolveTaskStatus(task, now);
+            const deadlineLabel = formatRelativeDeadline(task.deadline, now);
 
             return (
               <motion.article
@@ -170,7 +140,7 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
                   </span>
                 </div>
 
-                <h3 className="relative mt-4 text-lg font-semibold text-white">{formatAmount(task.amount)}</h3>
+                <h3 className="relative mt-4 text-lg font-semibold text-white">{formatReward(task.amount)}</h3>
 
                 <div className="relative mt-5 space-y-3 text-xs text-white/70">
                   <div className="flex items-center justify-between">
@@ -178,7 +148,7 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
                       <Coins className="h-4 w-4 text-[#00ffd1]" />
                       Creator
                     </span>
-                    <span className="font-mono text-[11px] text-white/60">{task.creator.slice(0, 6)}…{task.creator.slice(-4)}</span>
+                    <span className="font-mono text-[11px] text-white/60">{shortenAddress(task.creator)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
@@ -192,9 +162,7 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
                       <Calendar className="h-4 w-4" />
                       Claim hash
                     </span>
-                    <span className="font-mono text-[11px] text-white/50">
-                      {hasWorkHash ? `${task.workHash.slice(0, 8)}…${task.workHash.slice(-6)}` : 'Pending' }
-                    </span>
+                    <span className="font-mono text-[11px] text-white/50">{formatWorkHash(task.workHash)}</span>
                   </div>
                 </div>
 

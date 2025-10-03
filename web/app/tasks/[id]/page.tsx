@@ -3,44 +3,16 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, CircleDot, Clock, Coins, Loader2, RefreshCcw } from 'lucide-react';
-import { formatDistanceToNowStrict } from 'date-fns';
-import { formatEther } from 'viem';
 import { useReadContract } from 'wagmi';
 
 import { CONTRACT_ADDRESS, CONTRACT_CONFIGURED, TASK_ESCROW_ABI } from '@/lib/utils';
-
-const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
-
-function shorten(address: `0x${string}`) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
-function formatReward(amount: bigint) {
-  const parsed = Number(formatEther(amount));
-  if (!Number.isFinite(parsed) || parsed === 0) return '0 ETH';
-  if (parsed >= 1) return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 2 })} ETH`;
-  return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`;
-}
-
-function formatDeadline(deadline: bigint) {
-  const deadlineMs = Number(deadline) * 1000;
-  if (!Number.isFinite(deadlineMs) || deadlineMs <= 0) return '—';
-  try {
-    return formatDistanceToNowStrict(new Date(deadlineMs), { addSuffix: true });
-  } catch {
-    return '—';
-  }
-}
-
-function resolveStatus(task: { claimed: boolean; refunded: boolean; deadline: bigint }) {
-  if (task.claimed) return { label: 'Claimed', tone: 'emerald' } as const;
-  if (task.refunded) return { label: 'Refunded', tone: 'zinc' } as const;
-  const deadlineMs = Number(task.deadline) * 1000;
-  if (Number.isFinite(deadlineMs) && deadlineMs < Date.now()) {
-    return { label: 'Expired', tone: 'amber' } as const;
-  }
-  return { label: 'Open', tone: 'sky' } as const;
-}
+import {
+  formatRelativeDeadline,
+  formatReward,
+  formatWorkHash,
+  resolveTaskStatus,
+  shortenAddress,
+} from '@/lib/task-utils';
 
 export default function TaskDeepLink({ params }: { params: { id: string } }) {
   const idNumber = Number(params.id);
@@ -69,9 +41,8 @@ export default function TaskDeepLink({ params }: { params: { id: string } }) {
     };
   }, [data, idNumber, isValidId]);
 
-  const status = task ? resolveStatus(task) : null;
-  const deadlineLabel = task ? formatDeadline(task.deadline) : null;
-  const hasWorkHash = task ? task.workHash !== ZERO_HASH : false;
+  const status = task ? resolveTaskStatus(task) : null;
+  const deadlineLabel = task ? formatRelativeDeadline(task.deadline) : null;
 
   return (
     <div className="relative mx-auto mt-24 max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-[#050b17]/85 p-10 text-white shadow-[0_24px_80px_rgba(3,9,20,0.6)] backdrop-blur-2xl">
@@ -142,15 +113,13 @@ export default function TaskDeepLink({ params }: { params: { id: string } }) {
                     <span className="flex items-center gap-2 text-white/60">
                       <Calendar className="h-4 w-4" /> Work hash
                     </span>
-                    <span className="font-mono text-[11px] text-white/55">
-                      {hasWorkHash ? `${task.workHash.slice(0, 8)}…${task.workHash.slice(-6)}` : 'Pending'}
-                    </span>
+                    <span className="font-mono text-[11px] text-white/55">{formatWorkHash(task.workHash)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-white/60">
                       <CircleDot className="h-4 w-4 text-emerald-300" /> Creator
                     </span>
-                    <span className="font-mono text-[11px] text-white/55">{shorten(task.creator)}</span>
+                    <span className="font-mono text-[11px] text-white/55">{shortenAddress(task.creator)}</span>
                   </div>
                 </div>
               </div>

@@ -29,10 +29,20 @@ function formatError(error: unknown) {
   return 'Something went wrong. Please try again.';
 }
 
+function toLocalDateTimeInput(date: Date) {
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  const local = new Date(date.getTime() - offsetMs);
+  return local.toISOString().slice(0, 16);
+}
+
+function defaultDeadlineValue() {
+  return toLocalDateTimeInput(new Date(Date.now() + 60 * 60 * 1000));
+}
+
 export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
   const { address, chain, isConnected } = useAccount();
   const [amount, setAmount] = useState('0.05');
-  const [deadline, setDeadline] = useState('');
+  const [deadline, setDeadline] = useState(() => defaultDeadlineValue());
   const [localError, setLocalError] = useState<string | null>(null);
   const { data: txHash, isPending, writeContractAsync, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
@@ -40,22 +50,54 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
     query: { enabled: Boolean(txHash) },
   });
 
+  const wrongNetwork = Boolean(chain && chain.id !== base.id);
+  const minDeadline = useMemo(() => toLocalDateTimeInput(new Date(Date.now() + 60_000)), [open]);
+  const canSubmit = isConnected && !wrongNetwork && CONTRACT_CONFIGURED;
+
   const errorMessage = useMemo(() => localError ?? formatError(error), [localError, error]);
+  const submitLabel = useMemo(() => {
+    if (!isConnected) return 'Connect a wallet';
+    if (wrongNetwork) return 'Switch to Base';
+    if (!CONTRACT_CONFIGURED) return 'Contract not configured';
+    if (isPending) return 'Confirm in wallet';
+    if (isConfirming) return 'Waiting for confirmation';
+    return 'Create bounty';
+  }, [isConnected, wrongNetwork, isPending, isConfirming]);
 
   useEffect(() => {
     if (open) {
       setLocalError(null);
       reset();
+      setAmount('0.05');
+      setDeadline(defaultDeadlineValue());
     }
   }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {
       setAmount('0.05');
-      setDeadline('');
+      setDeadline(defaultDeadlineValue());
       onCreated();
     }
   }, [isSuccess, onCreated]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!deadline) {
+      setDeadline(defaultDeadlineValue());
+      return;
+    }
+    const current = new Date(deadline).getTime();
+    const minimum = new Date(minDeadline).getTime();
+    if (!Number.isFinite(current) || !Number.isFinite(minimum) || current < minimum) {
+      setDeadline(minDeadline);
+    }
+  }, [deadline, minDeadline, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    setLocalError(null);
+  }, [address, chain?.id, open]);
 
   if (!open) return null;
 
@@ -173,6 +215,7 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
                 value={deadline}
                 onChange={(event) => setDeadline(event.target.value)}
                 required
+                min={minDeadline}
               />
             </label>
           </div>
@@ -180,6 +223,18 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
           {!isConnected && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
               Connect a wallet to fund the bounty. We support every connector in the picker above.
+            </div>
+          )}
+
+          {wrongNetwork && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
+              Switch to the Base network to continue.
+            </div>
+          )}
+
+          {!CONTRACT_CONFIGURED && (
+            <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-xs text-sky-100">
+              Set NEXT_PUBLIC_CONTRACT_ADDRESS to enable bounty creation.
             </div>
           )}
 
@@ -211,13 +266,11 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
             </button>
             <button
               type="submit"
-              disabled={!isConnected || isPending || isConfirming}
+              disabled={!canSubmit || isPending || isConfirming}
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-5 py-2 text-sm font-medium text-[#001b16] shadow-[0_18px_45px_rgba(0,102,255,0.35)] transition hover:shadow-[0_24px_60px_rgba(0,102,255,0.45)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {(isPending || isConfirming) && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span className="relative z-10">
-                {isPending ? 'Confirm in wallet' : isConfirming ? 'Waiting for confirmation' : 'Create bounty'}
-              </span>
+              <span className="relative z-10">{submitLabel}</span>
               <span className="absolute inset-0 translate-x-[-40%] bg-white/25 blur-lg transition group-hover:translate-x-0" />
             </button>
           </div>

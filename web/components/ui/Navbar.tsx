@@ -4,10 +4,24 @@ import Link from 'next/link';
 import { Flame, Sparkles } from 'lucide-react';
 
 import WalletButton from '@/components/ui/WalletButton';
+import { CONTRACT_ADDRESS, CONTRACT_CONFIGURED } from '@/lib/utils';
 
 const navItems = [
   { href: '#browse', label: 'Missions' },
   { href: '#', label: 'Docs', disabled: true },
+  ...(CONTRACT_CONFIGURED
+    ? ([
+        {
+          href: `https://basescan.org/address/${CONTRACT_ADDRESS}`,
+          label: 'Contract',
+          external: true,
+        } as const,
+      ] satisfies ReadonlyArray<{
+        href: string;
+        label: string;
+        external?: boolean;
+      }>)
+    : []),
 ];
 
 export default function Navbar({ onNewTask }: { onNewTask: () => void }) {
@@ -27,25 +41,46 @@ export default function Navbar({ onNewTask }: { onNewTask: () => void }) {
           </Link>
 
           <nav className="relative hidden items-center gap-6 text-sm text-white/60 md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.disabled ? '#' : item.href}
-                aria-disabled={item.disabled}
-                tabIndex={item.disabled ? -1 : undefined}
-                className={`transition hover:text-white/90 ${
-                  item.disabled ? 'cursor-not-allowed text-white/30 hover:text-white/30' : ''
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const className = `transition hover:text-white/90 ${
+                item.disabled ? 'cursor-not-allowed text-white/30 hover:text-white/30' : ''
+              }`;
+
+              if (item.external) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`${className} inline-flex items-center gap-1`}
+                  >
+                    {item.label}
+                    <span aria-hidden="true" className="text-[0.7rem] text-white/40">
+                      ↗
+                    </span>
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.label}
+                  href={item.disabled ? '#' : item.href}
+                  aria-disabled={item.disabled}
+                  tabIndex={item.disabled ? -1 : undefined}
+                  className={className}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="relative flex items-center gap-3">
             <button
               onClick={onNewTask}
-              className="group relative hidden overflow-hidden rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15 lg:inline-flex"
+              className="group relative hidden overflow-hidden rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15 md:inline-flex"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#74f8ff]" />

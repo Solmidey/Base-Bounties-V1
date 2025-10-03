@@ -105,7 +105,7 @@ export default function WalletButton({
                     )}
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex flex-wrap justify-center gap-3">
                     {connectors.map((connector) => {
                       const envDisabled = connector.type === 'walletConnect' && !walletConnectConfigured;
                       const disabled =
@@ -137,6 +137,7 @@ export default function WalletButton({
                           disabled={(disabled && !isLoading) || envDisabled}
                           className={cn(
                             'group relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-4 text-left transition',
+                            'min-w-[240px] max-w-[320px] flex-1 basis-[240px] sm:basis-[260px] md:basis-[280px]',
                             envDisabled
                               ? 'cursor-not-allowed opacity-60'
                               : disabled && !isLoading

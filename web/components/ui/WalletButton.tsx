@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, LogOut, Wallet } from 'lucide-react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 import { cn } from '@/lib/utils';
-import { walletConnectConfigured } from '@/components/providers';
+import { walletConnectAvailable, walletConnectUsingFallback } from '@/components/providers';
 
 export default function WalletButton({
   className,
@@ -22,6 +22,7 @@ export default function WalletButton({
   const [open, setOpen] = useState(false);
   const [activeConnectorId, setActiveConnectorId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
 
   const shortAddress = useMemo(() => {
     if (!address) return '';
@@ -30,11 +31,17 @@ export default function WalletButton({
 
   const isBusy = isConnecting || status === 'pending';
 
+  useEffect(() => {
+    if (open && scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [open]);
+
   async function handleConnect(connectorId: string) {
     const connector = connectors.find((item) => item.uid === connectorId || item.id === connectorId);
     if (!connector) return;
-    if (connector.type === 'walletConnect' && !walletConnectConfigured) {
-      setLocalError('Set NEXT_PUBLIC_WALLETCONNECT_ID to enable WalletConnect.');
+    if (connector.type === 'walletConnect' && !walletConnectAvailable) {
+      setLocalError('WalletConnect is temporarily unavailable.');
       return;
     }
     try {
@@ -81,11 +88,11 @@ export default function WalletButton({
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:py-10">
           <div className="absolute inset-0 bg-black/70 backdrop-blur" onClick={() => setOpen(false)} />
           <div className="relative z-10 w-full max-w-2xl text-sm text-white">
-            <div className="relative max-h-[min(82vh,720px)] overflow-hidden rounded-3xl border border-white/12 bg-[#040916]/95 shadow-[0_30px_90px_rgba(2,12,30,0.65)]">
+            <div className="relative max-h-[min(88vh,680px)] overflow-hidden rounded-3xl border border-white/12 bg-[#040916]/95 shadow-[0_30px_90px_rgba(2,12,30,0.65)]">
               <div className="pointer-events-none absolute -inset-px rounded-[26px] border border-white/10 opacity-40 [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.8),transparent)]" />
-              <div className="relative max-h-[min(82vh,720px)] overflow-y-auto p-6 sm:p-8">
-                <div className="space-y-6">
-                  <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+              <div ref={scrollAreaRef} className="relative max-h-[min(88vh,680px)] overflow-y-auto px-5 py-6 sm:px-6 sm:py-7">
+                <div className="space-y-5">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <span className="text-xs uppercase tracking-[0.35em] text-white/50">Wallets</span>
                       <h2 className="mt-2 text-xl font-semibold">Choose how you connect</h2>
@@ -105,24 +112,27 @@ export default function WalletButton({
                     )}
                   </div>
 
-                  <div className="flex flex-wrap justify-center gap-3">
+                  <div className="mx-auto grid w-full max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                     {connectors.map((connector) => {
-                      const envDisabled = connector.type === 'walletConnect' && !walletConnectConfigured;
+                      const envDisabled = connector.type === 'walletConnect' && !walletConnectAvailable;
+                      const requiresInjectedProvider = connector.type === 'injected';
                       const disabled =
                         envDisabled ||
-                        !connector.ready ||
+                        (requiresInjectedProvider && !connector.ready) ||
                         isBusy ||
                         (activeConnectorId !== null &&
                           activeConnectorId !== connector.uid &&
                           activeConnectorId !== connector.id);
                       const isLoading = activeConnectorId === connector.uid || activeConnectorId === connector.id;
                       const helperText = envDisabled
-                        ? 'Add a WalletConnect ID to enable'
-                        : connector.ready
-                          ? address
-                            ? 'Switch wallet'
-                            : 'Connect instantly'
-                          : 'Install to enable';
+                        ? 'WalletConnect unavailable'
+                        : requiresInjectedProvider && !connector.ready
+                          ? 'Install to enable'
+                          : connector.ready
+                            ? address
+                              ? 'Switch wallet'
+                              : 'Connect instantly'
+                          : 'Connect instantly';
                       const chipLabel =
                         connector.type === 'walletConnect'
                           ? 'WalletConnect'
@@ -136,8 +146,7 @@ export default function WalletButton({
                           onClick={() => handleConnect(connector.uid || connector.id)}
                           disabled={(disabled && !isLoading) || envDisabled}
                           className={cn(
-                            'group relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-4 text-left transition',
-                            'min-w-[240px] max-w-[320px] flex-1 basis-[240px] sm:basis-[260px] md:basis-[280px]',
+                            'group relative w-full overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04] p-4 text-left transition',
                             envDisabled
                               ? 'cursor-not-allowed opacity-60'
                               : disabled && !isLoading
@@ -146,7 +155,7 @@ export default function WalletButton({
                           )}
                         >
                           <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex flex-col">
+                            <div className="flex min-w-0 flex-col">
                               <span className="text-sm font-medium text-white">{connector.name}</span>
                               <span
                                 className={cn(
@@ -174,10 +183,10 @@ export default function WalletButton({
                     })}
                   </div>
 
-                  {!walletConnectConfigured && (
+                  {walletConnectUsingFallback && (
                     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
-                      Set NEXT_PUBLIC_WALLETCONNECT_ID to enable WalletConnect connections and QR code flows. Browser wallets remain
-                      available.
+                      WalletConnect is using a shared project ID. Set NEXT_PUBLIC_WALLETCONNECT_ID to use your own credentials and remove
+                      this notice.
                     </div>
                   )}
 

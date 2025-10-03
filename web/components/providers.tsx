@@ -34,10 +34,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // --- ENV ---
 const rawWalletConnectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID?.trim();
-const FALLBACK_WALLETCONNECT_ID = '00000000000000000000000000000000';
-export const walletConnectId =
-  rawWalletConnectId && rawWalletConnectId.length > 0 ? rawWalletConnectId : FALLBACK_WALLETCONNECT_ID;
-export const walletConnectConfigured = Boolean(rawWalletConnectId && rawWalletConnectId.length > 0);
+const FALLBACK_WALLETCONNECT_ID = '21fef48091f12692cad574a6f7753643';
+const normalizedWalletConnectId = rawWalletConnectId && rawWalletConnectId.length > 0 ? rawWalletConnectId : undefined;
+export const walletConnectConfigured = Boolean(normalizedWalletConnectId);
+export const walletConnectId = normalizedWalletConnectId ?? FALLBACK_WALLETCONNECT_ID;
+export const walletConnectAvailable = Boolean(walletConnectId);
+export const walletConnectUsingFallback = !walletConnectConfigured;
 const RPC_MAINNET = process.env.NEXT_PUBLIC_RPC_URL?.trim(); // optional but recommended
 const RPC_SEPOLIA = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL?.trim(); // optional if you support testnet
 
@@ -146,7 +148,7 @@ const walletGroups = [
       rainbowWallet,
       metaMaskWallet,
       coinbaseWallet,
-      ...(walletConnectConfigured ? [walletConnectWallet] : []),
+      ...(walletConnectAvailable ? [walletConnectWallet] : []),
       patchedZerionWallet,
       rabbyWallet,
     ],
@@ -155,7 +157,7 @@ const walletGroups = [
     groupName: 'More options',
     wallets: [
       braveWallet,
-      ...(walletConnectConfigured
+      ...(walletConnectAvailable
         ? [
             trustWallet,
             ledgerWallet,

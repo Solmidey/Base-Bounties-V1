@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { X, Loader2, ArrowUpRight } from 'lucide-react';
 import { parseEther } from 'viem';
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { base } from 'wagmi/chains';
 
 import WalletButton from '@/components/ui/WalletButton';
 import { CONTRACT_ADDRESS, CONTRACT_CONFIGURED, TASK_ESCROW_ABI } from '@/lib/utils';
@@ -29,7 +30,7 @@ function formatError(error: unknown) {
 }
 
 export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
-  const { isConnected } = useAccount();
+  const { address, chain, isConnected } = useAccount();
   const [amount, setAmount] = useState('0.05');
   const [deadline, setDeadline] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -83,6 +84,11 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
       return;
     }
 
+    if (!address) {
+      setLocalError('Connect a wallet to fund the bounty.');
+      return;
+    }
+
     try {
       await writeContractAsync({
         address: CONTRACT_ADDRESS,
@@ -90,7 +96,9 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
         functionName: 'createTask',
         args: [BigInt(timestamp)],
         value: parseEther(amount),
-      });
+        chainId: (chain?.id ?? base.id) as typeof base.id,
+        account: address,
+      } as any);
     } catch (submissionError) {
       setLocalError(formatError(submissionError));
     }

@@ -5,6 +5,7 @@ import { Loader2, LogOut, Wallet } from 'lucide-react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 import { cn } from '@/lib/utils';
+import { walletConnectConfigured } from '@/components/providers';
 
 export default function WalletButton({
   className,
@@ -21,13 +22,17 @@ export default function WalletButton({
   const [open, setOpen] = useState(false);
   const [activeConnectorId, setActiveConnectorId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const visibleConnectors = useMemo(() => {
+    if (walletConnectConfigured) return connectors;
+    return connectors.filter((connector) => connector.type !== 'walletConnect');
+  }, [connectors]);
 
   const shortAddress = useMemo(() => {
     if (!address) return '';
     return `${address.slice(0, 6)}…${address.slice(-4)}`;
   }, [address]);
 
-  const isBusy = isConnecting || status === 'connecting';
+  const isBusy = isConnecting || status === 'pending';
 
   async function handleConnect(connectorId: string) {
     const connector = connectors.find((item) => item.uid === connectorId || item.id === connectorId);
@@ -99,7 +104,7 @@ export default function WalletButton({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                {connectors.map((connector) => {
+                {visibleConnectors.map((connector) => {
                   const disabled = !connector.ready || isBusy || activeConnectorId !== null;
                   const isLoading = activeConnectorId === connector.uid || activeConnectorId === connector.id;
                   return (
@@ -134,6 +139,12 @@ export default function WalletButton({
                   );
                 })}
               </div>
+
+              {!walletConnectConfigured && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
+                  Set NEXT_PUBLIC_WALLETCONNECT_ID to enable WalletConnect. Browser wallets remain available.
+                </div>
+              )}
 
               {(error || localError) && (
                 <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-100">

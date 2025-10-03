@@ -372,7 +372,6 @@ export default function Home() {
       enabled: CONTRACT_CONFIGURED,
       staleTime: 15_000,
     },
-    watch: CONTRACT_CONFIGURED,
   });
 
   useEffect(() => {
@@ -405,15 +404,22 @@ export default function Home() {
 
     async function loadTasks() {
       try {
+        const contracts = ids.map((id) => ({
+          address: CONTRACT_ADDRESS,
+          abi: TASK_ESCROW_ABI,
+          functionName: 'getTask',
+          args: [id],
+        }));
+
         const response = await publicClient.multicall({
-          contracts: ids.map((id) => ({
-            address: CONTRACT_ADDRESS,
-            abi: TASK_ESCROW_ABI,
-            functionName: 'getTask',
-            args: [id],
-          })),
+          contracts,
           allowFailure: true,
-        });
+          authorizationList: undefined,
+          blockNumber: undefined,
+          blockOverrides: undefined,
+          blockTag: undefined,
+          stateOverride: undefined,
+        } as any);
 
         if (ignore) return;
 

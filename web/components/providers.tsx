@@ -4,7 +4,31 @@ import React from 'react';
 import { WagmiProvider } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { http } from 'viem';
-import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig, RainbowKitProvider, darkTheme, type WalletList } from '@rainbow-me/rainbowkit';
+import {
+  argentWallet,
+  backpackWallet,
+  bitgetWallet,
+  braveWallet,
+  coinbaseWallet,
+  dawnWallet,
+  enkryptWallet,
+  foxWallet,
+  imTokenWallet,
+  injectedWallet,
+  kaikasWallet,
+  ledgerWallet,
+  metaMaskWallet,
+  okxWallet,
+  phantomWallet,
+  rabbyWallet,
+  rainbowWallet,
+  safeWallet,
+  talismanWallet,
+  trustWallet,
+  walletConnectWallet,
+  zerionWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // --- ENV ---
@@ -25,11 +49,53 @@ if (RPC_SEPOLIA) {
 }
 
 // --- Wagmi/RainbowKit config (v2 style) ---
+const chains = [base, baseSepolia] as const;
+
+const walletGroups = [
+  {
+    groupName: 'Popular',
+    wallets: [
+      rainbowWallet,
+      metaMaskWallet,
+      coinbaseWallet,
+      ...(walletConnectConfigured ? [walletConnectWallet] : []),
+      zerionWallet,
+      rabbyWallet,
+    ],
+  },
+  {
+    groupName: 'More options',
+    wallets: [
+      braveWallet,
+      ...(walletConnectConfigured
+        ? [
+            trustWallet,
+            ledgerWallet,
+            argentWallet,
+            dawnWallet,
+            okxWallet,
+            bitgetWallet,
+            imTokenWallet,
+            phantomWallet,
+            talismanWallet,
+            foxWallet,
+          ]
+        : []),
+      enkryptWallet,
+      backpackWallet,
+      kaikasWallet,
+      safeWallet,
+      injectedWallet,
+    ],
+  },
+] satisfies WalletList;
+
 const config = getDefaultConfig({
   appName: 'Base Bounties',
   projectId: walletConnectId,
-  chains: [base, baseSepolia],
+  chains,
   transports,
+  wallets: walletGroups,
 });
 
 const queryClient = new QueryClient();

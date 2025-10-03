@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { WagmiProvider } from 'wagmi';
+import { WagmiProvider, createConnector } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { http } from 'viem';
 import { getDefaultConfig, RainbowKitProvider, darkTheme, type WalletList } from '@rainbow-me/rainbowkit';
+import { injected } from 'wagmi/connectors';
 import {
   argentWallet,
   backpackWallet,
@@ -51,6 +52,92 @@ if (RPC_SEPOLIA) {
 // --- Wagmi/RainbowKit config (v2 style) ---
 const chains = [base, baseSepolia] as const;
 
+type ZerionCandidate = {
+  isZerion?: boolean;
+  provider?: ZerionCandidate;
+};
+
+function extractZerionProvider(candidate: unknown): ZerionCandidate | undefined {
+  if (!candidate || typeof candidate !== 'object') return undefined;
+  const record = candidate as ZerionCandidate;
+  if (record.isZerion) return record;
+  if (record.provider && record.provider.isZerion) return record.provider;
+  return undefined;
+}
+
+function getZerionInjectedProvider(): ZerionCandidate | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const win = window as typeof window & {
+    zerionWallet?: {
+      ethereum?: ZerionCandidate;
+      provider?: ZerionCandidate;
+    };
+    ethereum?: ZerionCandidate & {
+      providers?: ZerionCandidate[];
+    };
+  };
+
+  const providers = win.ethereum?.providers;
+  if (Array.isArray(providers)) {
+    for (const provider of providers) {
+      const extracted = extractZerionProvider(provider);
+      if (extracted) return extracted;
+    }
+  }
+
+  const fallbacks: (ZerionCandidate | undefined)[] = [
+    win.ethereum,
+    win.zerionWallet?.ethereum,
+    win.zerionWallet?.provider,
+    win.zerionWallet as ZerionCandidate | undefined,
+  ];
+
+  for (const candidate of fallbacks) {
+    const extracted = extractZerionProvider(candidate);
+    if (extracted) return extracted;
+  }
+
+  return undefined;
+}
+
+const patchedZerionWallet: (typeof zerionWallet) = (options) => {
+  const wallet = zerionWallet(options);
+
+  if (walletConnectConfigured) {
+    return wallet;
+  }
+
+  const baseHidden = wallet.hidden;
+
+  return {
+    ...wallet,
+    hidden: () => {
+      if (baseHidden?.()) return true;
+      return typeof window === 'undefined' ? true : !getZerionInjectedProvider();
+    },
+    installed: typeof window === 'undefined' ? false : Boolean(getZerionInjectedProvider()),
+    createConnector: (walletDetails) => {
+      const provider = getZerionInjectedProvider();
+      if (!provider) {
+        return wallet.createConnector(walletDetails);
+      }
+
+      const injectedConfig = {
+        target: () => ({
+          id: walletDetails.rkDetails.id,
+          name: walletDetails.rkDetails.name,
+          provider,
+        }),
+      } as const;
+
+      return createConnector((config) => ({
+        ...injected(injectedConfig)(config),
+        ...walletDetails,
+      }));
+    },
+  };
+};
+
 const walletGroups = [
   {
     groupName: 'Popular',
@@ -59,7 +146,7 @@ const walletGroups = [
       metaMaskWallet,
       coinbaseWallet,
       ...(walletConnectConfigured ? [walletConnectWallet] : []),
-      zerionWallet,
+      patchedZerionWallet,
       rabbyWallet,
     ],
   },

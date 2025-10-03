@@ -7,6 +7,16 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { cn } from '@/lib/utils';
 import { walletConnectAvailable, walletConnectUsingFallback } from '@/components/providers';
 
+/**
+ * Renders a wallet connection button and a modal UI for selecting, connecting, or disconnecting wallets.
+ *
+ * The button shows a shortened address when connected, opens a modal listing available connectors, displays per-connector loading and helper text, and surfaces connection errors. It also supports disconnecting the current account.
+ *
+ * @param className - Optional additional CSS classes to apply to the trigger button
+ * @param label - Button label shown when no wallet is connected (default: `"Connect wallet"`)
+ * @param variant - Visual style of the trigger button; `"solid"` or `"ghost"` (default: `"solid"`)
+ * @returns A JSX element that renders the trigger button and the connection modal UI
+ */
 export default function WalletButton({
   className,
   label = 'Connect wallet',

@@ -1,176 +1,474 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { ArrowRight, Flame, Twitter, Trophy, PlusCircle, Filter, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  Beaker,
+  Bolt,
+  CheckCircle2,
+  CircleDot,
+  Coins,
+  Box,
+  Globe,
+  Layers3,
+  ListChecks,
+  Radar,
+  Sparkles,
+  Wand2,
+} from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from 'framer-motion';
 
 import CreateTaskModal from '@/components/ui/CreateTaskModal';
-import TaskGrid from '@/components/ui/TaskGrid';
-import Navbar from '@/components/ui/Navbar';
 import Footer from '@/components/ui/Footer';
+import Navbar from '@/components/ui/Navbar';
+import TaskGrid from '@/components/ui/TaskGrid';
+
+const badges = [
+  'On-chain escrow',
+  'Cinematic briefs',
+  'Real-time payouts',
+];
+
+const featureCards = [
+  {
+    icon: <Layers3 className="h-5 w-5 text-sky-200" />,
+    title: 'Modular missions',
+    description:
+      'Compose creative, product, and research tracks with Base-native gating and auto approvals.',
+  },
+  {
+    icon: <Box className="h-5 w-5 text-emerald-200" />,
+    title: '3D-ready templates',
+    description:
+      'Render-ready briefs keep your art direction consistent—from volumetric frames to shader prompts.',
+  },
+  {
+    icon: <Beaker className="h-5 w-5 text-cyan-200" />,
+    title: 'Analytics you can touch',
+    description:
+      'Granular metrics on applications, releases, and refunds inside an immersive control surface.',
+  },
+];
+
+const processSteps = [
+  {
+    title: 'Author the mission',
+    icon: <Wand2 className="h-5 w-5" />,
+    description:
+      'Draft cinematic prompts, attach references, and lock the escrow—all in a single modal.',
+  },
+  {
+    title: 'Signal and review',
+    icon: <Radar className="h-5 w-5" />,
+    description:
+      'Applicants reply with work hashes. Collaborators co-review without exposing the vault.',
+  },
+  {
+    title: 'Release with clarity',
+    icon: <ListChecks className="h-5 w-5" />,
+    description:
+      'Push a single transaction to reward hunters. On-chain receipts stream everywhere instantly.',
+  },
+];
+
+const stats = [
+  { label: 'Builders paid', value: '412' },
+  { label: 'ETH routed', value: '192.4' },
+  { label: 'Avg. claim time', value: '2.3 days' },
+];
+
+type GlowPoint = {
+  x: number;
+  y: number;
+  size: number;
+  blur: number;
+  color: string;
+};
+
+const glowPoints: GlowPoint[] = [
+  { x: 20, y: 18, size: 320, blur: 140, color: 'rgba(0,170,255,0.25)' },
+  { x: 82, y: 28, size: 360, blur: 160, color: 'rgba(0,255,209,0.2)' },
+  { x: 48, y: 72, size: 420, blur: 200, color: 'rgba(0,119,255,0.18)' },
+];
+
+function useTilt(maxTilt = 14) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+
+  const springX = useSpring(rotateX, { stiffness: 180, damping: 18 });
+  const springY = useSpring(rotateY, { stiffness: 180, damping: 18 });
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const bounds = ref.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const relativeX = (event.clientX - bounds.left) / bounds.width;
+    const relativeY = (event.clientY - bounds.top) / bounds.height;
+
+    rotateX.set((0.5 - relativeY) * maxTilt);
+    rotateY.set((relativeX - 0.5) * maxTilt);
+  };
+
+  const reset = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+  };
+
+  return {
+    ref,
+    rotateX: springX,
+    rotateY: springY,
+    handlePointerMove,
+    reset,
+  };
+}
+
+function Glare({ rotateX, rotateY }: { rotateX: MotionValue<number>; rotateY: MotionValue<number> }) {
+  const glareX = useTransform(rotateY, [-14, 14], [80, -80]);
+  const glareY = useTransform(rotateX, [-14, 14], [-80, 80]);
+
+  return (
+    <motion.span
+      style={{ translateX: glareX, translateY: glareY }}
+      className="pointer-events-none absolute inset-16 rounded-[32px] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.55),rgba(255,255,255,0))] opacity-60 mix-blend-screen"
+    />
+  );
+}
+
+function HeroShowcase({ onLaunch }: { onLaunch: () => void }) {
+  const { ref, rotateX, rotateY, handlePointerMove, reset } = useTilt(16);
+
+  return (
+    <motion.div
+      ref={ref}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={reset}
+      style={{ rotateX, rotateY, transformPerspective: 1100 }}
+      className="relative mx-auto w-full max-w-[500px]"
+    >
+      <div className="absolute inset-0 -z-20 rounded-[40px] bg-gradient-to-br from-[#0ef7ff]/15 via-[#0a1c3d]/20 to-transparent blur-3xl" />
+      <motion.div
+        className="absolute inset-5 -z-10 rounded-[34px] border border-white/10 bg-[linear-gradient(145deg,rgba(12,35,65,0.82),rgba(4,10,26,0.92))]"
+        animate={{ opacity: [0.8, 1, 0.8] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <div className="relative overflow-hidden rounded-[36px] border border-white/15 bg-[#030917]/80 p-7 shadow-[0_32px_90px_rgba(4,13,34,0.65)] backdrop-blur-3xl">
+        <Glare rotateX={rotateX} rotateY={rotateY} />
+        <div className="grid gap-6 text-sm text-white/80">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
+              Featured Vault
+            </span>
+            <span className="flex items-center gap-1 text-emerald-200">
+              <CircleDot className="h-4 w-4" />
+              live
+            </span>
+          </div>
+          <div className="space-y-3 text-left">
+            <h2 className="text-2xl font-semibold text-white">Sculpt a holographic Base access portal</h2>
+            <p className="text-xs text-white/60">
+              Weave particle trails, volumetric light, and Base glyphs into an interactive gateway. Showcase depth cues and multi-layer parallax.
+            </p>
+          </div>
+          <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-white/50">
+              <span>Reward</span>
+              <span>Deadline</span>
+            </div>
+            <div className="flex items-center justify-between text-base font-semibold text-white">
+              <span className="flex items-center gap-2">
+                <Coins className="h-4 w-4 text-[#7af6ff]" /> 0.32 ETH
+              </span>
+              <span className="flex items-center gap-2">
+                <ClockGlyph /> 3d 14h
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-2 text-white/60">
+              <Bolt className="h-4 w-4 text-[#00ffd1]" /> Instant escrow proof
+            </span>
+            <span className="flex items-center gap-2 text-white/60">
+              <Globe className="h-4 w-4 text-sky-200" /> Shareable deep link
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={onLaunch}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-4 py-2 text-sm font-semibold text-[#03110f] shadow-[0_16px_35px_rgba(0,110,255,0.35)] transition hover:shadow-[0_24px_50px_rgba(0,110,255,0.45)]"
+            >
+              Submit concept
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onLaunch}
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+            >
+              View escrow
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function ClockGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="7" cy="7" r="6.25" stroke="currentColor" strokeWidth="1.5" opacity="0.65" />
+      <path d="M7 3.5V7L9.4 8.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function GlowBackdrop() {
+  const gradients = useMemo(
+    () =>
+      glowPoints.map((point, index) => (
+        <span
+          key={`${point.x}-${index}`}
+          style={{
+            left: `${point.x}%`,
+            top: `${point.y}%`,
+            width: point.size,
+            height: point.size,
+            filter: `blur(${point.blur}px)`,
+            background: point.color,
+          }}
+          className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+        />
+      )),
+    []
+  );
+
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10">
+      {gradients}
+    </div>
+  );
+}
 
 export default function Home() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0a0f13] text-white">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#02060f] text-white">
+      <GlowBackdrop />
       <Navbar onNewTask={() => setOpen(true)} />
 
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        {/* animated base gradient */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1000px_600px_at_70%_-10%,rgba(0,255,209,0.18),transparent),radial-gradient(900px_500px_at_0%_0%,rgba(0,140,255,0.22),transparent)] blur-3xl" />
-
-        <div className="relative mx-auto max-w-7xl px-6 pt-24 pb-10">
-          <div className="grid items-center gap-10 md:grid-cols-2">
-            <div>
-              <motion.h1
-                initial={{ opacity: 0, y: 10 }}
+      <main className="relative flex-1">
+        <section className="relative isolate overflow-hidden pb-24 pt-20">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(10,78,148,0.45),transparent)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,15,0.4)_0%,rgba(2,6,15,0.95)_80%)]" />
+          <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-6 lg:flex-row lg:items-center">
+            <div className="max-w-xl space-y-10">
+              <motion.span
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.7 }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.35em] text-white/60"
+              >
+                Base bounty studio
+              </motion.span>
+              <motion.h1
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.05 }}
                 className="text-4xl font-semibold leading-tight md:text-6xl"
               >
-                Ship bounties at the speed of{' '}
-                <span className="bg-gradient-to-r from-[#00FFD1] to-[#0085FF] bg-clip-text text-transparent">
-                  Base
-                </span>
-                .
+                Launch cinematic missions with on-chain certainty.
               </motion.h1>
-
               <motion.p
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.05 }}
-                className="mt-5 max-w-lg text-white/70"
+                transition={{ duration: 0.8, delay: 0.1 }}
+                className="text-base text-white/70 md:text-lg"
               >
-                Create tasks, sign approvals with EIP-712, and pay out on-chain. A refined marketplace UX that makes
-                crypto work feel effortless.
+                Base Bounty Studio fuses creative direction with provable escrow. Spin up volumetric briefs, invite collaborators, and reward builders in minutes—all wrapped in a responsive 3D interface.
               </motion.p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.15 }}
+                className="flex flex-wrap items-center gap-4"
+              >
                 <button
                   onClick={() => setOpen(true)}
-                  className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#00FFD1] to-[#0085FF] px-5 py-3 font-medium text-[#061017] shadow-[0_10px_30px_rgba(0,133,255,0.35)]"
+                  className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-6 py-3 text-sm font-semibold uppercase tracking-wide text-[#021410] shadow-[0_16px_40px_rgba(0,110,255,0.35)] transition hover:shadow-[0_22px_55px_rgba(0,110,255,0.45)]"
                 >
-                  <PlusCircle className="h-5 w-5" />
-                  Create Task
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                  <Sparkles className="h-5 w-5" />
+                  Create bounty
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </button>
-
-                <a
-                  href="https://x.com/KamiKaiteneth"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur transition hover:bg-white/10"
-                >
-                  <Twitter className="h-5 w-5 text-[#1DA1F2]" />
-                  Follow on X
-                </a>
-
                 <Link
                   href="#browse"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 px-5 py-3 text-white/80 hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm text-white/80 transition hover:bg-white/10"
                 >
-                  <Filter className="h-5 w-5" />
-                  Browse bounties
+                  Browse live work
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-              </div>
-
-              {/* stats */}
-              <div className="mt-8 grid max-w-xl grid-cols-3 gap-4 text-center text-sm">
-                <Stat label="Active bounties" value="36" icon={<Flame className="h-4 w-4" />} />
-                <Stat label="Payouts settled" value="124" icon={<Trophy className="h-4 w-4" />} />
-                <Stat label="Avg. time to claim" value="2.1d" icon={<Sparkles className="h-4 w-4" />} />
-              </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.85, delay: 0.2 }}
+                className="grid gap-4 sm:grid-cols-3"
+              >
+                {stats.map((stat) => (
+                  <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+                    <div className="text-xs uppercase tracking-[0.3em] text-white/55">{stat.label}</div>
+                    <div className="mt-2 text-xl font-semibold text-white">{stat.value}</div>
+                  </div>
+                ))}
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 0.25 }}
+                className="flex flex-wrap items-center gap-3 text-xs text-white/55"
+              >
+                {badges.map((badge) => (
+                  <span
+                    key={badge}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-emerald-300" /> {badge}
+                  </span>
+                ))}
+              </motion.div>
             </div>
+            <HeroShowcase onLaunch={() => setOpen(true)} />
+          </div>
+        </section>
 
-            {/* showcase card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.03] p-6 shadow-2xl backdrop-blur"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">Most recent bounty</h3>
-                  <p className="mt-1 text-sm text-white/60">
-                    Design a Base-themed landing page animation with 3D spark effects.
-                  </p>
-                </div>
-                <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs text-emerald-300">Open</span>
+        <section className="relative border-t border-white/5 py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_900px_at_0%_0%,rgba(0,102,255,0.18),transparent),radial-gradient(900px_900px_at_100%_0%,rgba(0,255,209,0.12),transparent)]" />
+          <div className="relative mx-auto max-w-6xl space-y-12 px-6">
+            <div className="max-w-2xl space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-white/60">
+                Why builders choose us
+              </span>
+              <h2 className="text-3xl font-semibold md:text-4xl">A studio-grade workflow for bounty programs.</h2>
+              <p className="text-white/70">
+                Each mission runs inside a layered interface tuned for creative teams. Visual dashboards, network-aware payouts, and shareable deep links make it effortless to rally your community.
+              </p>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {featureCards.map((feature) => (
+                <motion.article
+                  key={feature.title}
+                  whileHover={{ y: -10 }}
+                  className="group relative overflow-hidden rounded-3xl border border-white/10 bg-[#050b17]/80 p-6 text-sm shadow-[0_18px_50px_rgba(4,12,28,0.55)] backdrop-blur-2xl"
+                >
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(220px_220px_at_100%_0%,rgba(0,110,255,0.18),transparent)] opacity-80 transition group-hover:opacity-100" />
+                  <div className="relative space-y-4">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
+                      {feature.icon}
+                    </span>
+                    <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
+                    <p className="text-sm text-white/70">{feature.description}</p>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="browse" className="relative border-t border-white/5 py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(7,107,255,0.14),transparent)]" />
+          <div className="relative mx-auto max-w-6xl px-6">
+            <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-xl space-y-3">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-white/60">
+                  Live missions
+                </span>
+                <h2 className="text-3xl font-semibold md:text-4xl">Plug into the bounty stream.</h2>
+                <p className="text-white/70">
+                  Explore fast-moving requests curated for Base-native builders. Each card reflects the interactive surfaces hunters will experience inside the wallet.
+                </p>
               </div>
-
-              <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-                <MiniStat label="Reward" value="0.25 ETH" />
-                <MiniStat label="Deadline" value="3d 8h" />
-                <MiniStat label="Applicants" value="12" />
-              </div>
-
               <button
                 onClick={() => setOpen(true)}
-                className="mt-6 w-full rounded-xl bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur transition hover:bg-white/15"
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
               >
-                Submit proposal
+                Post your own mission
+                <Sparkles className="h-4 w-4 text-[#74f8ff]" />
               </button>
-
-              <div className="pointer-events-none absolute -inset-1 -z-10 rounded-3xl bg-[radial-gradient(400px_200px_at_100%_0%,rgba(0,255,209,0.15),transparent),radial-gradient(500px_300px_at_0%_100%,rgba(0,133,255,0.12),transparent)]" />
-            </motion.div>
+            </div>
+            <TaskGrid onNewTask={() => setOpen(true)} />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* BROWSE */}
-      <section id="browse" className="relative border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-6 py-14">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Explore new bounties</h2>
-            <Link href="#" className="text-sm text-white/70 hover:text-white">
-              View all →
-            </Link>
+        <section className="relative border-t border-white/5 py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_900px_at_10%_0%,rgba(0,102,255,0.18),transparent),radial-gradient(900px_900px_at_90%_0%,rgba(0,255,209,0.16),transparent)]" />
+          <div className="relative mx-auto max-w-6xl space-y-12 px-6">
+            <div className="max-w-2xl space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-white/60">
+                How it flows
+              </span>
+              <h2 className="text-3xl font-semibold md:text-4xl">Guide missions from spark to payout.</h2>
+              <p className="text-white/70">
+                Studio operators orchestrate every stage from one translucent cockpit. Bounty cards update in real time as your collaborators review work and sign releases.
+              </p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-3">
+              {processSteps.map((step) => (
+                <div key={step.title} className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(220px_220px_at_100%_0%,rgba(0,132,255,0.18),transparent)] opacity-60 group-hover:opacity-90" />
+                  <div className="relative flex flex-col gap-4">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-sky-100">
+                      {step.icon}
+                    </span>
+                    <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+                    <p className="text-sm text-white/70">{step.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        </section>
 
-          <TaskGrid onNewTask={() => setOpen(true)} />
-        </div>
-      </section>
+        <section className="relative isolate overflow-hidden border-t border-white/5 py-24">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(0,110,255,0.2),transparent)]" />
+          <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-8 px-6 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-white/60">
+              Ready to launch?
+            </span>
+            <h2 className="text-3xl font-semibold md:text-4xl">Turn ambitious ideas into Base-native missions.</h2>
+            <p className="max-w-2xl text-white/70">
+              Connect your wallet, draft a cinematic brief, and push funds into escrow without leaving this screen. Hunters get immersive surfaces, you retain full control.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <button
+                onClick={() => setOpen(true)}
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-6 py-3 text-sm font-semibold uppercase tracking-wide text-[#021410] shadow-[0_16px_40px_rgba(0,110,255,0.35)] transition hover:shadow-[0_22px_55px_rgba(0,110,255,0.45)]"
+              >
+                Launch a mission
+                <Sparkles className="h-5 w-5" />
+              </button>
+              <Link
+                href="/tasks/1"
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm text-white/80 transition hover:bg-white/10"
+              >
+                Peek at a task deep link
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
-
-      {/* Modal with onCreated now passed */}
-      <CreateTaskModal
-        open={open}
-        onClose={() => setOpen(false)}
-        onCreated={() => {
-          // Close the modal and (optionally) refresh data
-          setOpen(false);
-          // If you fetch tasks server-side, you could call router.refresh() here
-        }}
-      />
+      <CreateTaskModal open={open} onClose={() => setOpen(false)} onCreated={() => setOpen(false)} />
     </div>
   );
 }
-
-function Stat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="mx-auto flex w-full max-w-[9rem] flex-col items-center gap-1">
-        <div className="flex items-center gap-2 text-white/70">
-          <span className="h-5 w-5">{icon}</span>
-          <span className="text-xs">{label}</span>
-        </div>
-        <div className="text-2xl font-semibold">{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-      <div className="text-xs text-white/60">{label}</div>
-      <div className="text-lg font-medium">{value}</div>
-    </div>
-  );
-}
-

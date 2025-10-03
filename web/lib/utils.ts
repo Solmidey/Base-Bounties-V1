@@ -2,7 +2,15 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+
+const envAddress = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "").trim();
+
+export const CONTRACT_ADDRESS = (envAddress.length > 0
+  ? (envAddress as `0x${string}`)
+  : ZERO_ADDRESS) as `0x${string}`;
+
+export const CONTRACT_CONFIGURED = CONTRACT_ADDRESS !== ZERO_ADDRESS;
 
 export const TASK_ESCROW_ABI = [
   {

@@ -3,12 +3,10 @@
 import {
   ArrowRight,
   Beaker,
-  Bolt,
   CheckCircle2,
   CircleDot,
   Coins,
   Box,
-  Globe,
   Layers3,
   ListChecks,
   Radar,
@@ -16,7 +14,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   motion,
   useMotionValue,
@@ -24,11 +22,21 @@ import {
   useTransform,
   type MotionValue,
 } from 'framer-motion';
+import { usePublicClient, useReadContract } from 'wagmi';
 
 import CreateTaskModal from '@/components/ui/CreateTaskModal';
 import Footer from '@/components/ui/Footer';
 import Navbar from '@/components/ui/Navbar';
 import TaskGrid from '@/components/ui/TaskGrid';
+import { CONTRACT_ADDRESS, CONTRACT_CONFIGURED, TASK_ESCROW_ABI } from '@/lib/utils';
+import {
+  formatEscrowValue,
+  formatRelativeDeadline,
+  formatReward,
+  resolveTaskStatus,
+  shortenAddress,
+  type TaskSummary,
+} from '@/lib/task-utils';
 
 const badges = [
   'On-chain escrow',
@@ -76,12 +84,6 @@ const processSteps = [
     description:
       'Push a single transaction to reward hunters. On-chain receipts stream everywhere instantly.',
   },
-];
-
-const stats = [
-  { label: 'Builders paid', value: '412' },
-  { label: 'ETH routed', value: '192.4' },
-  { label: 'Avg. claim time', value: '2.3 days' },
 ];
 
 type GlowPoint = {
@@ -143,8 +145,23 @@ function Glare({ rotateX, rotateY }: { rotateX: MotionValue<number>; rotateY: Mo
   );
 }
 
-function HeroShowcase({ onLaunch }: { onLaunch: () => void }) {
+function HeroShowcase({
+  onLaunch,
+  task,
+  contractConfigured,
+  contractAddress,
+}: {
+  onLaunch: () => void;
+  task: TaskSummary | null;
+  contractConfigured: boolean;
+  contractAddress: `0x${string}`;
+}) {
   const { ref, rotateX, rotateY, handlePointerMove, reset } = useTilt(16);
+  const status = task ? resolveTaskStatus(task) : null;
+  const deadlineLabel = task ? formatRelativeDeadline(task.deadline) : null;
+  const rewardLabel = task ? formatReward(task.amount) : '—';
+  const creatorLabel = task ? shortenAddress(task.creator) : null;
+  const contractUrl = `https://basescan.org/address/${contractAddress}`;
 
   return (
     <motion.div
@@ -165,56 +182,100 @@ function HeroShowcase({ onLaunch }: { onLaunch: () => void }) {
         <div className="grid gap-6 text-sm text-white/80">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
-              Featured Vault
+              Latest escrow
             </span>
-            <span className="flex items-center gap-1 text-emerald-200">
-              <CircleDot className="h-4 w-4" />
-              live
-            </span>
-          </div>
-          <div className="space-y-3 text-left">
-            <h2 className="text-2xl font-semibold text-white">Sculpt a holographic Base access portal</h2>
-            <p className="text-xs text-white/60">
-              Weave particle trails, volumetric light, and Base glyphs into an interactive gateway. Showcase depth cues and multi-layer parallax.
-            </p>
-          </div>
-          <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-white/50">
-              <span>Reward</span>
-              <span>Deadline</span>
-            </div>
-            <div className="flex items-center justify-between text-base font-semibold text-white">
-              <span className="flex items-center gap-2">
-                <Coins className="h-4 w-4 text-[#7af6ff]" /> 0.32 ETH
-              </span>
-              <span className="flex items-center gap-2">
-                <ClockGlyph /> 3d 14h
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-2 text-white/60">
-              <Bolt className="h-4 w-4 text-[#00ffd1]" /> Instant escrow proof
-            </span>
-            <span className="flex items-center gap-2 text-white/60">
-              <Globe className="h-4 w-4 text-sky-200" /> Shareable deep link
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={onLaunch}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-4 py-2 text-sm font-semibold text-[#03110f] shadow-[0_16px_35px_rgba(0,110,255,0.35)] transition hover:shadow-[0_24px_50px_rgba(0,110,255,0.45)]"
+            <span
+              className={
+                status
+                  ? `inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] ${
+                      status.tone === 'emerald'
+                        ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-100'
+                        : status.tone === 'zinc'
+                          ? 'border-white/20 bg-white/10 text-white/70'
+                          : status.tone === 'amber'
+                            ? 'border-amber-400/40 bg-amber-400/15 text-amber-100'
+                            : 'border-sky-400/40 bg-sky-500/15 text-sky-100'
+                    }`
+                  : 'inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-white/60'
+              }
             >
-              Submit concept
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onLaunch}
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
-            >
-              View escrow
-            </button>
+              {status ? status.label : 'Awaiting launch'}
+            </span>
           </div>
+          {task ? (
+            <>
+              <div className="space-y-3 text-left">
+                <h2 className="text-2xl font-semibold text-white">Task #{task.id}</h2>
+                <p className="text-xs text-white/60">
+                  {rewardLabel} locked by {creatorLabel}.{' '}
+                  {deadlineLabel ? `Deadline ${deadlineLabel}.` : 'Deadline pending.'}
+                </p>
+              </div>
+              <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-white/50">
+                  <span>Reward</span>
+                  <span>Deadline</span>
+                </div>
+                <div className="flex items-center justify-between text-base font-semibold text-white">
+                  <span className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-[#7af6ff]" /> {rewardLabel}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <ClockGlyph /> {deadlineLabel ?? '—'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-white/60">
+                <span className="flex items-center gap-2">
+                  <CircleDot className="h-4 w-4 text-emerald-300" /> Creator
+                </span>
+                <span className="font-mono text-[11px] text-white/60">{creatorLabel}</span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/tasks/${task.id}`}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-4 py-2 text-sm font-semibold text-[#03110f] shadow-[0_16px_35px_rgba(0,110,255,0.35)] transition hover:shadow-[0_24px_50px_rgba(0,110,255,0.45)]"
+                >
+                  Open claim helper
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <button
+                  onClick={onLaunch}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+                >
+                  Launch another
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-3 text-left">
+                <h2 className="text-2xl font-semibold text-white">No missions yet</h2>
+                <p className="text-xs text-white/60">
+                  Fund your first bounty to see it mirrored here instantly. Hunters will be able to inspect escrow without leaving the page.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={onLaunch}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#00ffd1] via-[#05c4ff] to-[#0066ff] px-4 py-2 text-sm font-semibold text-[#03110f] shadow-[0_16px_35px_rgba(0,110,255,0.35)] transition hover:shadow-[0_24px_50px_rgba(0,110,255,0.45)]"
+                >
+                  Create a mission
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                {contractConfigured && (
+                  <Link
+                    href={contractUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+                  >
+                    View contract
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </motion.div>
@@ -259,6 +320,158 @@ function GlowBackdrop() {
 
 export default function Home() {
   const [open, setOpen] = useState(false);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(
+    CONTRACT_CONFIGURED ? null : 'Set NEXT_PUBLIC_CONTRACT_ADDRESS to load live tasks from the chain.'
+  );
+  const publicClient = usePublicClient();
+  const { data: nextTaskId, refetch: refetchNextTaskId } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: TASK_ESCROW_ABI,
+    functionName: 'nextTaskId',
+    query: {
+      enabled: CONTRACT_CONFIGURED,
+      staleTime: 15_000,
+    },
+  });
+
+  useEffect(() => {
+    if (!CONTRACT_CONFIGURED) {
+      setTasks([]);
+      setTaskError('Set NEXT_PUBLIC_CONTRACT_ADDRESS to load live tasks from the chain.');
+      setLoadingTasks(false);
+      return;
+    }
+    if (!publicClient) return;
+
+    if (!nextTaskId) {
+      setLoadingTasks(true);
+      return;
+    }
+
+    const lastId = Number(nextTaskId) - 1;
+    if (lastId <= 0) {
+      setTasks([]);
+      setTaskError(null);
+      setLoadingTasks(false);
+      return;
+    }
+
+    let ignore = false;
+    setLoadingTasks(true);
+    setTaskError(null);
+
+    const ids = Array.from({ length: lastId }, (_, index) => BigInt(lastId - index));
+
+    async function loadTasks() {
+      try {
+        const contracts = ids.map((id) => ({
+          address: CONTRACT_ADDRESS,
+          abi: TASK_ESCROW_ABI,
+          functionName: 'getTask',
+          args: [id],
+        }));
+
+        const response = await publicClient.multicall({
+          contracts,
+          allowFailure: true,
+          authorizationList: undefined,
+          blockNumber: undefined,
+          blockOverrides: undefined,
+          blockTag: undefined,
+          stateOverride: undefined,
+        } as any);
+
+        if (ignore) return;
+
+        const mapped = response
+          .map((item, idx) => {
+            if (item.status !== 'success') return null;
+            const value = item.result as {
+              creator: `0x${string}`;
+              amount: bigint;
+              deadline: bigint;
+              claimed: boolean;
+              refunded: boolean;
+              workHash: `0x${string}`;
+            };
+            return {
+              id: Number(ids[idx]),
+              creator: value.creator,
+              amount: value.amount,
+              deadline: value.deadline,
+              claimed: value.claimed,
+              refunded: value.refunded,
+              workHash: value.workHash,
+            } satisfies TaskSummary;
+          })
+          .filter(Boolean) as TaskSummary[];
+
+        setTasks(mapped.sort((a, b) => b.id - a.id));
+
+        if (response.some((item) => item.status === 'failure')) {
+          setTaskError('Some tasks failed to load. Try refreshing.');
+        }
+      } catch (loadError) {
+        if (ignore) return;
+        console.error('task load error', loadError);
+        setTaskError('Unable to read tasks from the contract. Check your RPC configuration.');
+        setTasks([]);
+      } finally {
+        if (!ignore) {
+          setLoadingTasks(false);
+        }
+      }
+    }
+
+    loadTasks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [publicClient, nextTaskId, refreshNonce]);
+
+  useEffect(() => {
+    if (!CONTRACT_CONFIGURED || refreshNonce === 0) return;
+    refetchNextTaskId();
+  }, [refreshNonce, refetchNextTaskId]);
+
+  const totalTasks = useMemo(() => {
+    if (!CONTRACT_CONFIGURED) return 0;
+    if (nextTaskId) return Math.max(Number(nextTaskId) - 1, 0);
+    return tasks.length;
+  }, [nextTaskId, tasks.length]);
+
+  const openTaskCount = useMemo(() => {
+    const current = Date.now();
+    return tasks.filter((task) => {
+      const deadlineMs = Number(task.deadline) * 1000;
+      return !task.claimed && !task.refunded && (!Number.isFinite(deadlineMs) || deadlineMs > current);
+    }).length;
+  }, [tasks]);
+
+  const totalEscrow = useMemo(() => tasks.reduce((acc, task) => acc + task.amount, 0n), [tasks]);
+  const totalEscrowDisplay = useMemo(() => formatEscrowValue(totalEscrow), [totalEscrow]);
+
+  const heroStats = useMemo(
+    () =>
+      CONTRACT_CONFIGURED
+        ? [
+            { label: 'Total tasks', value: totalTasks.toLocaleString() },
+            { label: 'Open missions', value: openTaskCount.toLocaleString() },
+            { label: 'Escrowed ETH', value: `${totalEscrowDisplay} ETH` },
+          ]
+        : [
+            { label: 'Contract status', value: 'Not configured' },
+            { label: 'Total tasks', value: '—' },
+            { label: 'Escrowed ETH', value: '0 ETH' },
+          ],
+    [totalTasks, openTaskCount, totalEscrowDisplay]
+  );
+
+  const latestTask = tasks.length > 0 ? tasks[0] : null;
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#02060f] text-white">
@@ -323,7 +536,7 @@ export default function Home() {
                 transition={{ duration: 0.85, delay: 0.2 }}
                 className="grid gap-4 sm:grid-cols-3"
               >
-                {stats.map((stat) => (
+                {heroStats.map((stat) => (
                   <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
                     <div className="text-xs uppercase tracking-[0.3em] text-white/55">{stat.label}</div>
                     <div className="mt-2 text-xl font-semibold text-white">{stat.value}</div>
@@ -346,7 +559,13 @@ export default function Home() {
                 ))}
               </motion.div>
             </div>
-            <HeroShowcase onLaunch={() => setOpen(true)} />
+
+            <HeroShowcase
+              onLaunch={() => setOpen(true)}
+              task={latestTask}
+              contractConfigured={CONTRACT_CONFIGURED}
+              contractAddress={CONTRACT_ADDRESS}
+            />
           </div>
         </section>
 
@@ -404,7 +623,14 @@ export default function Home() {
                 <Sparkles className="h-4 w-4 text-[#74f8ff]" />
               </button>
             </div>
-            <TaskGrid onNewTask={() => setOpen(true)} />
+
+            <TaskGrid
+              tasks={tasks}
+              loading={loadingTasks}
+              error={taskError}
+              onNewTask={() => setOpen(true)}
+              onRefresh={() => setRefreshNonce((value) => value + 1)}
+            />
           </div>
         </section>
 
@@ -468,7 +694,15 @@ export default function Home() {
       </main>
 
       <Footer />
-      <CreateTaskModal open={open} onClose={() => setOpen(false)} onCreated={() => setOpen(false)} />
+      <CreateTaskModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onCreated={() => {
+          setOpen(false);
+          setRefreshNonce((value) => value + 1);
+        }}
+      />
     </div>
   );
 }
+

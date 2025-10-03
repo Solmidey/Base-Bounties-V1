@@ -3,30 +3,89 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-zinc-950 text-zinc-100 min-h-screen;
-  font-family: 'Inter', sans-serif;
+  @apply min-h-screen bg-[#030712] text-white;
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(0, 102, 255, 0.18), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(0, 255, 209, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(6, 12, 28, 0.85) 0%, rgba(3, 7, 18, 0.95) 80%, rgba(2, 4, 12, 1) 100%);
+  overflow-x: hidden;
 }
 
-a {
-  @apply text-sky-400 hover:text-sky-300;
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><g fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"><path d="M0 80h160M80 0v160"/></g></svg>');
+  opacity: 0.28;
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle at center, rgba(0,0,0,0.9) 0%, transparent 80%);
+  z-index: -1;
 }
 
-input, textarea, select {
-  @apply bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500;
+::selection {
+  background: rgba(0, 255, 209, 0.25);
+  color: #f8fbff;
 }
 
-button {
-  @apply inline-flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-zinc-700;
+@layer utilities {
+  .bg-grid-soft {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  .mask-radial {
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.92) 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.92) 0%, transparent 70%);
+  }
 }
 
-.card {
-  @apply border border-zinc-800 rounded-2xl bg-zinc-900/70 p-6 shadow-lg;
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
 }
 
-.badge {
-  @apply inline-flex items-center rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-zinc-200;
+.animate-float-slow {
+  animation: float-slow 18s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 6s ease-in-out infinite;
+}
+
+@layer base {
+  [data-rk] [role='dialog'] {
+    max-width: 420px !important;
+    width: min(420px, 90vw) !important;
+    margin: 0 auto !important;
+  }
+
+  [data-rk] [role='dialog'] > div {
+    border-radius: 24px !important;
+  }
+
+  [data-rk] [role='dialog'] header {
+    border-bottom-width: 0 !important;
+  }
 }

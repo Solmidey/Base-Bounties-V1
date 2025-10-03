@@ -51,6 +51,7 @@ function getStatus(task: TaskSummary, now: number) {
 
 export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }: Props) {
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(9);
   const now = useMemo(() => Date.now(), [tasks.length, loading]);
 
   useEffect(() => {
@@ -59,7 +60,15 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
     return () => clearTimeout(timeout);
   }, [copiedId]);
 
-  const visibleTasks = useMemo(() => tasks.slice(0, 9), [tasks]);
+  useEffect(() => {
+    setVisibleCount((current) => {
+      if (tasks.length === 0) return 9;
+      return Math.min(Math.max(9, current), tasks.length);
+    });
+  }, [tasks.length]);
+
+  const visibleTasks = useMemo(() => tasks.slice(0, visibleCount), [tasks, visibleCount]);
+  const canLoadMore = visibleTasks.length < tasks.length;
 
   async function copyTaskId(id: number) {
     try {
@@ -208,6 +217,17 @@ export default function TaskGrid({ tasks, loading, error, onNewTask, onRefresh }
               </motion.article>
             );
           })}
+        </div>
+      )}
+
+      {canLoadMore && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setVisibleCount((count) => Math.min(count + 9, tasks.length))}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/15"
+          >
+            Load more tasks
+          </button>
         </div>
       )}
     </div>

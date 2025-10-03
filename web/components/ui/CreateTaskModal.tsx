@@ -79,7 +79,9 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
       return;
     }
 
-    if (!amount || Number(amount) <= 0) {
+    const sanitizedAmount = amount.trim();
+
+    if (!sanitizedAmount || Number(sanitizedAmount) <= 0) {
       setLocalError('Enter an escrow amount greater than zero.');
       return;
     }
@@ -89,13 +91,26 @@ export default function CreateTaskModal({ open, onClose, onCreated }: Props) {
       return;
     }
 
+    if (chain && chain.id !== base.id) {
+      setLocalError('Switch to the Base network to fund the bounty.');
+      return;
+    }
+
+    let parsedAmount: bigint;
+    try {
+      parsedAmount = parseEther(sanitizedAmount);
+    } catch {
+      setLocalError('Enter a valid ETH amount (for example 0.05).');
+      return;
+    }
+
     try {
       await writeContractAsync({
         address: CONTRACT_ADDRESS,
         abi: TASK_ESCROW_ABI,
         functionName: 'createTask',
         args: [BigInt(timestamp)],
-        value: parseEther(amount),
+        value: parsedAmount,
         chainId: (chain?.id ?? base.id) as typeof base.id,
         account: address,
       } as any);

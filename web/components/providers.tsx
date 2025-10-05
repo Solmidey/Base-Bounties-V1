@@ -36,12 +36,10 @@ import { patchWalletConnectModal } from '@/lib/patchWalletConnectModal';
 
 // --- ENV ---
 const rawWalletConnectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID?.trim();
-const FALLBACK_WALLETCONNECT_ID = '21fef48091f12692cad574a6f7753643';
-const normalizedWalletConnectId = rawWalletConnectId && rawWalletConnectId.length > 0 ? rawWalletConnectId : undefined;
-export const walletConnectConfigured = Boolean(normalizedWalletConnectId);
-export const walletConnectId = normalizedWalletConnectId ?? FALLBACK_WALLETCONNECT_ID;
-export const walletConnectAvailable = Boolean(walletConnectId);
-export const walletConnectUsingFallback = !walletConnectConfigured;
+export const walletConnectConfigured = Boolean(rawWalletConnectId && rawWalletConnectId.length > 0);
+export const walletConnectId = rawWalletConnectId;
+export const walletConnectAvailable = walletConnectConfigured;
+export const walletConnectUsingFallback = false;
 const RPC_MAINNET = process.env.NEXT_PUBLIC_RPC_URL?.trim(); // optional but recommended
 const RPC_SEPOLIA = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL?.trim(); // optional if you support testnet
 
@@ -105,41 +103,33 @@ function getZerionInjectedProvider(): ZerionCandidate {
   return undefined;
 }
 
-const patchedZerionWallet: (typeof zerionWallet) = (options) => {
+const patchedZerionWallet: typeof zerionWallet = (options) => {
   const wallet = zerionWallet(options);
 
-  if (walletConnectConfigured) {
+  const provider = getZerionInjectedProvider();
+  if (!provider) {
     return wallet;
   }
+
+  const injectedConfig = {
+    target: () => ({
+      id: 'zerion-injected',
+      name: 'Zerion',
+      provider: () => provider,
+    }),
+  } as const;
 
   const baseHidden = wallet.hidden;
 
   return {
     ...wallet,
-    hidden: () => {
-      if (baseHidden?.()) return true;
-      return typeof window === 'undefined' ? true : !getZerionInjectedProvider();
-    },
-    installed: typeof window === 'undefined' ? false : Boolean(getZerionInjectedProvider()),
-    createConnector: (walletDetails) => {
-      const provider = getZerionInjectedProvider();
-      if (!provider) {
-        return wallet.createConnector(walletDetails);
-      }
-
-      const injectedConfig = {
-        target: () => ({
-          id: walletDetails.rkDetails.id,
-          name: walletDetails.rkDetails.name,
-          provider: () => provider,
-        }),
-      } as const;
-
-      return createConnector((config) => ({
+    hidden: () => baseHidden?.() ?? false,
+    installed: true,
+    createConnector: (walletDetails) =>
+      createConnector((config) => ({
         ...injected(injectedConfig)(config),
         ...walletDetails,
-      }));
-    },
+      })),
   };
 };
 
@@ -182,9 +172,11 @@ const walletGroups = [
   },
 ] satisfies WalletList;
 
+const DUMMY_WALLETCONNECT_ID = 'placeholder-walletconnect-id';
+
 const config = getDefaultConfig({
   appName: 'Base Bounties',
-  projectId: walletConnectId,
+  projectId: walletConnectId ?? DUMMY_WALLETCONNECT_ID,
   chains,
   transports,
   wallets: walletGroups,

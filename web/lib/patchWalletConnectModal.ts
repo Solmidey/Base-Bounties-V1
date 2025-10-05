@@ -1,24 +1,17 @@
 export function patchWalletConnectModal() {
-  if (typeof window === 'undefined' || typeof window.customElements === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined' || typeof window.customElements === 'undefined') return;
 
   window.customElements
     .whenDefined('wcm-search-input')
     .then(() => {
       try {
         const ctor = window.customElements.get('wcm-search-input');
-        if (!ctor) {
-          return;
-        }
+        if (!ctor) return;
 
-        const proto = (ctor as { prototype: Record<string, unknown> }).prototype as {
+        const proto = (ctor as { prototype: Record<string, any> }).prototype as {
           __patchedOnChange?: boolean;
         };
-
-        if (proto.__patchedOnChange) {
-          return;
-        }
+        if (proto.__patchedOnChange) return;
 
         const descriptor = Object.getOwnPropertyDescriptor(proto, 'onChange');
         if (!descriptor || typeof descriptor.set !== 'function') {
@@ -33,45 +26,36 @@ export function patchWalletConnectModal() {
           configurable: descriptor.configurable ?? true,
           enumerable: descriptor.enumerable ?? false,
           get: originalGet,
-          set(this: unknown, value: unknown) {
-            if (typeof value === 'function') {
-              const handler = value as (event: Event & { target: EventTarget & { value?: string } }) => void;
-              const wrapped = function (this: any, event?: Event) {
-                const input = (event?.target as HTMLInputElement | undefined) ??
-                  (event as unknown as { currentTarget?: EventTarget })?.currentTarget ??
-                  this?.shadowRoot?.querySelector?.('input') ??
-                  null;
+          set(this: any, value: unknown) {
+            if (typeof value !== 'function') return originalSet.call(this, value);
 
-                const safeEvent = (() => {
-                  if (event && typeof event === 'object' && (event as { target?: unknown }).target) {
-                    return event as Event & { target: EventTarget & { value?: string } };
-                  }
+            const handler = value as (arg: { value: string } | Event) => void;
 
-                  const fallbackTarget = (input ?? ({ value: '' } as EventTarget & { value?: string })) as EventTarget & {
-                    value?: string;
-                  };
+            const wrapped = function (this: any, e?: any) {
+              // If caller already supplies { value }, pass through
+              if (e && typeof e === 'object' && 'value' in e) {
+                return handler.call(this, e);
+              }
+              // Otherwise synthesize { value } from the input element or event.target
+              const inputEl =
+                (e?.target as HTMLInputElement | undefined) ??
+                this?.shadowRoot?.querySelector?.('input') ??
+                null;
 
-                  return {
-                    target: fallbackTarget,
-                  } as Event & { target: EventTarget & { value?: string } };
-                })();
+              const valueObj = { value: String(inputEl?.value ?? '') };
+              return handler.call(this, valueObj);
+            };
 
-                handler.call(this, safeEvent);
-              };
-
-              return originalSet.call(this, wrapped);
-            }
-
-            return originalSet.call(this, value);
+            return originalSet.call(this, wrapped);
           },
         });
 
         proto.__patchedOnChange = true;
       } catch (err) {
-        console.error('[walletconnect] Failed to patch search input handler:', err);
+        console.error('[walletconnect] patch failed:', err);
       }
     })
     .catch((error) => {
-      console.error('[walletconnect] Failed waiting for search input definition:', error);
+      console.error('[walletconnect] waiting for wcm-search-input failed:', error);
     });
 }

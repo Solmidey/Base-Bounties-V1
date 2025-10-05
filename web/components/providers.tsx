@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { WagmiProvider, createConnector } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { http, type EIP1193Provider } from 'viem';
@@ -31,6 +31,8 @@ import {
   zerionWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+import { patchWalletConnectModal } from '@/lib/patchWalletConnectModal';
 
 // --- ENV ---
 const rawWalletConnectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID?.trim();
@@ -191,6 +193,10 @@ const config = getDefaultConfig({
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    patchWalletConnectModal();
+  }, []);
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

@@ -104,7 +104,7 @@ function getZerionInjectedProvider(): ZerionCandidate {
 }
 
 const patchedZerionWallet: typeof zerionWallet = (options) => {
-  const wallet = zerionWallet(options);
+  const wallet = zerionInjectedWallet(options);
 
   const provider = getZerionInjectedProvider();
   if (!provider) {

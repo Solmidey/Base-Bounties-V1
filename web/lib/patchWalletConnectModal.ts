@@ -32,11 +32,11 @@ export function patchWalletConnectModal() {
             const handler = value as (arg: { value: string } | Event) => void;
 
             const wrapped = function (this: any, e?: any) {
-              // If caller already supplies { value }, pass through
+              // Pass through if already { value }
               if (e && typeof e === 'object' && 'value' in e) {
                 return handler.call(this, e);
               }
-              // Otherwise synthesize { value } from the input element or event.target
+              // Otherwise synthesize { value } from input or event.target
               const inputEl =
                 (e?.target as HTMLInputElement | undefined) ??
                 this?.shadowRoot?.querySelector?.('input') ??

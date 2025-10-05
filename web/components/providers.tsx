@@ -143,6 +143,82 @@ const patchedZerionWallet: (typeof zerionWallet) = (options) => {
   };
 };
 
+type RabbyCandidate = (EIP1193Provider & {
+  isRabby?: true;
+  provider?: RabbyCandidate;
+  ethereum?: RabbyCandidate;
+}) | undefined;
+
+function extractRabbyProvider(candidate: unknown): RabbyCandidate {
+  if (!candidate || typeof candidate !== 'object') return undefined;
+  const record = candidate as RabbyCandidate;
+  if (!record) return undefined;
+  if (record.isRabby) return record;
+  if (record.provider && record.provider.isRabby) return record.provider;
+  if (record.ethereum && record.ethereum.isRabby) return record.ethereum;
+  return undefined;
+}
+
+function getRabbyInjectedProvider(): RabbyCandidate {
+  if (typeof window === 'undefined') return undefined;
+  const win = window as typeof window & {
+    ethereum?: RabbyCandidate & {
+      providers?: RabbyCandidate[];
+    };
+    rabby?: RabbyCandidate;
+    rabbyWallet?: RabbyCandidate;
+  };
+
+  const providers = win.ethereum?.providers;
+  if (Array.isArray(providers)) {
+    for (const provider of providers) {
+      const extracted = extractRabbyProvider(provider);
+      if (extracted) return extracted;
+    }
+  }
+
+  const fallbacks: (RabbyCandidate | undefined)[] = [
+    win.ethereum,
+    win.rabby,
+    win.rabbyWallet,
+  ];
+
+  for (const candidate of fallbacks) {
+    const extracted = extractRabbyProvider(candidate);
+    if (extracted) return extracted;
+  }
+
+  return undefined;
+}
+
+const patchedRabbyWallet: (typeof rabbyWallet) = (options) => {
+  const wallet = rabbyWallet(options);
+
+  return {
+    ...wallet,
+    installed: typeof window === 'undefined' ? false : Boolean(getRabbyInjectedProvider()),
+    createConnector: (walletDetails) => {
+      const provider = getRabbyInjectedProvider();
+      if (!provider) {
+        return wallet.createConnector(walletDetails);
+      }
+
+      const injectedConfig = {
+        target: () => ({
+          id: walletDetails.rkDetails.id,
+          name: walletDetails.rkDetails.name,
+          provider: () => provider,
+        }),
+      } as const;
+
+      return createConnector((config) => ({
+        ...injected(injectedConfig)(config),
+        ...walletDetails,
+      }));
+    },
+  };
+};
+
 const walletGroups = [
   {
     groupName: 'Popular',
@@ -152,7 +228,7 @@ const walletGroups = [
       coinbaseWallet,
       ...(walletConnectAvailable ? [walletConnectWallet] : []),
       patchedZerionWallet,
-      rabbyWallet,
+      patchedRabbyWallet,
     ],
   },
   {

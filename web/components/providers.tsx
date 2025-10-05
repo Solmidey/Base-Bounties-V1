@@ -33,6 +33,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { patchWalletConnectModal } from '@/lib/patchWalletConnectModal';
+import { zerionInjectedWallet } from '@/lib/zerionInjected';
 
 // --- ENV ---
 const rawWalletConnectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID?.trim();

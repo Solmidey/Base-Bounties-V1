@@ -8,7 +8,7 @@ experience, and publish a shareable bounty card.
 
 ## Repository layout
 
-- `contracts/` – Solidity sources for the escrow primitive and supporting EIP-712 utilities.
+- `contracts/` – Hardhat project containing the escrow contract, utilities, and integration tests.
 - `web/` – Next.js app that lets creators post and fund tasks while guiding hunters through submitting claims.
 
 ## Onchain escrow (TaskBoardEscrow.sol)
@@ -52,8 +52,16 @@ Users can optionally provide a task ID to jump hunters directly into the claim w
 
 ### Deploy the escrow contract
 
-Deploy `contracts/TaskBoardEscrow.sol` using your preferred toolchain (Foundry, Hardhat, etc.). Record the deployed
+Deploy `contracts/src/TaskBoardEscrow.sol` using your preferred toolchain (the repository now ships with a configured Hardhat setup under `contracts/`). Record the deployed
 address for use in the web app.
+
+To run the included test suite that validates the escrow flows:
+
+```bash
+cd contracts
+npm install
+npm test
+```
 
 ### Configure and run the web app
 

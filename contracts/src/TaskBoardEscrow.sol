@@ -13,7 +13,7 @@ contract TaskBoardEscrow is EIP712 {
     /// @dev Typed structured data hash for a claim.
     /// keccak256("Claim(uint256 taskId,address hunter,bytes32 workHash)")
     bytes32 private constant CLAIM_TYPEHASH =
-        0x5fde8480c1ecfb5d735d1f618eb5d286276f4e5a3815014a4f14f7a64de79539;
+        0x5c9f5a8fe8825b4cc2356773a95c57965b5e7888a4b6e3e1de76233ce870d16c;
 
     struct Task {
         address creator;
